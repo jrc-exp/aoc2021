@@ -1,0 +1,3 @@
+[run]
+# assume pytest tests are in tests/ subdirectories
+omit = */tests/*

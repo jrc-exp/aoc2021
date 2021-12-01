@@ -1,0 +1,23 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 140
+target-version =  ['py38']
+
+[tool.isort]
+profile = "black"
+indent = "    "
+balanced_wrapping = true
+multi_line_output = 3
+src_paths = ["aoc"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+# additional mypy configuration can be added here if desired
+# https://mypy.readthedocs.io/en/stable/config_file.html#using-a-pyproject-toml-file

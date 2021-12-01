@@ -1,0 +1,11 @@
+{
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    "python.formatting.blackPath": "${workspaceFolder}/venv/bin/black",
+    "python.formatting.blackArgs": [
+        "--line-length",
+        "140"
+    ],
+    "python.linting.pylintEnabled": true,
+    "python.sortImports.path": "${workspaceFolder}/venv/bin/isort",
+}
