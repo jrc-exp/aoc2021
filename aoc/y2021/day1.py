@@ -8,7 +8,7 @@ from aoc.y2021.utils import load_data
 def main():
     """ Main function """
     # load data:
-    d = load_data("day1.txt")
+    d = load_data("day1.txt", "int")
 
     # answer 1:
     answer_1 = np.sum(np.diff(d) > 0)

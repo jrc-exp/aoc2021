@@ -21,6 +21,11 @@ stub_day:
 	@cp -n test/test_day0.py $(TEST_DAY_FILE)
 	@sed -i s/Day\ 0/Day\ $(DAY)/g $(TEST_DAY_FILE)
 	@sed -i s/day0/day$(DAY)/g $(TEST_DAY_FILE)
+	@curl \
+		-X GET \
+		-H "Cookie: session=${AOC_SESSION}" \
+		-o "inputs/day${DAY}.txt" \
+		"https://adventofcode.com/2021/day/${DAY}/input"
 	@if grep -q day$(DAY) setup.cfg; then echo exists; \
 		else echo "  run_day$(DAY) = aoc.y2021.day$(DAY):main" >> setup.cfg && \
 		pip install --no-deps -e .; fi
