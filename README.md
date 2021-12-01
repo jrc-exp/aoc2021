@@ -1,5 +1,3 @@
 ## aoc2021
 
-## About
-
-## Getting Started
+Advent of Code 2021
