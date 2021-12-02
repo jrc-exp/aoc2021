@@ -26,9 +26,10 @@ stub_day:
 		-H "Cookie: session=${AOC_SESSION}" \
 		-o "inputs/day${DAY}.txt" \
 		"https://adventofcode.com/2021/day/${DAY}/input"
+	@gnome-terminal -x bash -ic "vi $(DAY_FILE); bash" &
 	@if grep -q day$(DAY) setup.cfg; then echo exists; \
 		else echo "  run_day$(DAY) = aoc.y2021.day$(DAY):main" >> setup.cfg && \
 		pip install --no-deps -e .; fi
-	@vi $(DAY_FILE)
+	@run_day$(DAY)
 
 precommit: run_format run_pylint run_pytest
