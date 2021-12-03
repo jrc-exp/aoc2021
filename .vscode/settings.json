@@ -8,4 +8,5 @@
     ],
     "python.linting.pylintEnabled": true,
     "python.sortImports.path": "${workspaceFolder}/venv/bin/isort",
+    "python.pythonPath": "/home/rcrawford/anaconda3/bin/python",
 }
