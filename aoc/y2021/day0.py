@@ -7,10 +7,10 @@ from aoc.y2021.utils import load_data
 
 def solve(d):
     """ actual solution with puzzle input """
-    result = 0
+    result_1, result_2 = 0, 0
     print("INPUT DATA:")
     print(d)
-    return result
+    return result_1, result_2
 
 
 def main():
@@ -18,23 +18,23 @@ def main():
     # load data:
     skip_test = False
     if not skip_test:
-        try:
-            d = load_data("test_day0.txt")
-            test_answer = 0
-            test_solution_1 = solve(d)
-            assert test_solution_1 == test_answer
-            print('TEST PASSES')
-            print("Test Answer 1: ", test_answer)
-            print("My Test Answer 1: ", test_solution_1)
-        except OSError:
-            print('No Test File!')
-        except AssertionError:
-            print(f"TEST FAILED: TRUTH={test_answer}, YOURS={test_solution_1}")
-            sys.exit()
+        print('**** TEST DATA ****')
+        d = load_data("test_day0.txt")
+        test_answer_1 = 0
+        test_answer_2 = 0
+        test_solution_1, test_solution_2 = solve(d)
+        assert test_solution_1 == test_answer_1, f"TEST #1 FAILED: TRUTH={test_answer_1}, YOURS={test_solution_1}"
+        assert test_solution_2 == test_answer_2, f"TEST #2 FAILED: TRUTH={test_answer_2}, YOURS={test_solution_2}"
+        print('**** TESTS PASSED ****')
+        print("Test Answer 1: ", test_answer_1)
+        print("My Test Answer 1: ", test_solution_1)
+        print("Test Answer 2: ", test_answer_2)
+        print("My Test Answer 2: ", test_solution_2)
     print('**** REAL DATA ****')
     d = load_data("day0.txt")
-    answer_1 = solve(d)
+    answer_1, answer_2 = solve(d)
     print("Answer 1:", answer_1)
+    print("Answer 2:", answer_2)
 
 
 if __name__ == "__main__":
