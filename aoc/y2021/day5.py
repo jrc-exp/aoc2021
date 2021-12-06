@@ -1,6 +1,7 @@
 """ Day 5 Solutions """
 
 from aoc.y2021.utils import load_data
+import numpy as np
 
 
 def main():
@@ -23,7 +24,6 @@ def main():
 
     straight_lines = list(filter(lambda x: x[0][0]==x[1][0] or x[0][1]==x[1][1], lines))
     diagonal_lines = list(filter(lambda x: not x[0][0]==x[1][0] and not x[0][1]==x[1][1], lines))
-    import numpy as np
 
     max_n = np.max(np.array(straight_lines))+1
     grid = np.zeros((max_n, max_n))
