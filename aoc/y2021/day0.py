@@ -20,7 +20,7 @@ def main():
     if not skip_test:
         print('**** TEST DATA ****')
         d = load_data("test_day0.txt")
-        test_answer_1 = 0
+        test_answer_1 = TEST_ANSWER
         test_answer_2 = 0
         test_solution_1, test_solution_2 = solve(d)
         assert test_solution_1 == test_answer_1, f"TEST #1 FAILED: TRUTH={test_answer_1}, YOURS={test_solution_1}"

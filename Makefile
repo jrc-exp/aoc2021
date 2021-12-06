@@ -18,6 +18,7 @@ stub_day:
 	@cp -n aoc/y2021/day0.py $(DAY_FILE)
 	@sed -i s/Day\ 0/Day\ $(DAY)/g $(DAY_FILE)
 	@sed -i s/day0/day$(DAY)/g $(DAY_FILE)
+	@sed -i s/TEST_ANSWER/`cat inputs/test_day$(DAY)_answer.txt`/g $(DAY_FILE)
 	@cp -n test/test_day0.py $(TEST_DAY_FILE)
 	@sed -i s/Day\ 0/Day\ $(DAY)/g $(TEST_DAY_FILE)
 	@sed -i s/day0/day$(DAY)/g $(TEST_DAY_FILE)
