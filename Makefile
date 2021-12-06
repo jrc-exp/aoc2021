@@ -21,6 +21,7 @@ stub_day:
 	@cp -n test/test_day0.py $(TEST_DAY_FILE)
 	@sed -i s/Day\ 0/Day\ $(DAY)/g $(TEST_DAY_FILE)
 	@sed -i s/day0/day$(DAY)/g $(TEST_DAY_FILE)
+	@python -m aoc.y2021.get_test $(DAY)
 	@curl \
 		-X GET \
 		-H "Cookie: session=${AOC_SESSION}" \
