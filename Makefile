@@ -15,6 +15,7 @@ stub_day:
 	@echo "Making day $(DAY)"
 	@$(eval DAY_FILE := aoc/y2021/day$(DAY).py)
 	@$(eval TEST_DAY_FILE := test/test_day$(DAY).py)
+	@python -m aoc.y2021.get_test $(DAY)
 	@cp -n aoc/y2021/day0.py $(DAY_FILE)
 	@sed -i s/Day\ 0/Day\ $(DAY)/g $(DAY_FILE)
 	@sed -i s/day0/day$(DAY)/g $(DAY_FILE)
@@ -22,7 +23,6 @@ stub_day:
 	@cp -n test/test_day0.py $(TEST_DAY_FILE)
 	@sed -i s/Day\ 0/Day\ $(DAY)/g $(TEST_DAY_FILE)
 	@sed -i s/day0/day$(DAY)/g $(TEST_DAY_FILE)
-	@python -m aoc.y2021.get_test $(DAY)
 	@curl \
 		-X GET \
 		-H "Cookie: session=${AOC_SESSION}" \
