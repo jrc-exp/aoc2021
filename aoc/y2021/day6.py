@@ -9,7 +9,7 @@ def main():
     d = load_data("test_day6.txt")
     d = load_data("day6.txt")
     d = list(map(int, d[0].split(",")))
-    fish = [0 for _ in range(9)]
+    fish = [0] * 9
     for f in d:
         fish[f] += 1
     for _ in range(256):
