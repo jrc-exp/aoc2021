@@ -8,9 +8,8 @@ from skimage.measure import regionprops, label
 
 
 def low_point(d):
-    a, b, c, d, e, f, g, h, i = d
-    if e < min(b, d, f, h):
-        return e + 1
+    if d[2] < min(d[0], d[1], d[3], d[4]):
+        return d[2] + 1
     return 0
 
 
@@ -19,7 +18,8 @@ def solve(d):
     result_1, result_2 = 0, 0
     print("INPUT DATA:")
     d = np.array([[int(k) for k in x] for x in d])
-    mins = generic_filter(d, low_point, (3, 3), mode="constant", cval=1000)
+    footprint = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
+    mins = generic_filter(d, low_point, footprint=footprint, mode="constant", cval=1000)
     result_1 = np.sum(mins)
 
     d[d < 9] = 0
