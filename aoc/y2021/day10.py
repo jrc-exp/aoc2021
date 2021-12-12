@@ -48,8 +48,10 @@ def validate_chunk(chunk, start=""):
         if out == VALID:
             return validate_chunk(chunk, start)
         if out == CORRUPT:
+            # corrupt's chunk will be the score for the character that was bad
             return CORRUPT, chunk
         if out == INVALID:
+            # chunk will track the needed closing characters
             return INVALID, chunk + PAIRS[start]
 
     if char == PAIRS[start]:
