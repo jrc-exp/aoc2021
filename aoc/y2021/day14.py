@@ -22,8 +22,10 @@ def solve(d):
         transforms.append(row.split(" -> "))
     print(transforms)
     print(string)
-    rounds = []
-    rounds_ct = []
+
+    """
+    PART 1 THE INEFFICIENT WAY
+    """
     for _ in range(10):
         holder = [
             "",
@@ -36,14 +38,15 @@ def solve(d):
             except ValueError:
                 pass
         string = "".join([k + l for (k, l) in zip(string, holder)])
-        rounds.append(Counter(digraphs_in(string)))
-        rounds_ct.append({x: string.count(x) for x in set(string)})
     counts = sorted([string.count(x) for x in set(string)])
     result_1 = counts[-1] - counts[0]
 
     di_list = digraphs_in(initial_str)
     counts = Counter(di_list)
 
+    """
+    PART 2 THE EFFICIENT WAY
+    """
     transform_map = {pair: letter for (pair, letter) in transforms}
     for step in range(0, 40):
         new_counts = Counter()

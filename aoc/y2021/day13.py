@@ -35,11 +35,10 @@ def solve(d):
     paper = np.zeros((max(ys) + 1, max(xs) + 1), dtype=np.bool)
     for x, y in zip(xs, ys):
         paper[y, x] = True
-    pageprint(paper)
+    # pageprint(paper)
     ct = 0
     for direction, dist in folds:
         ct += 1
-        print(direction, dist)
         if direction == "x":
             a = paper[:, :dist]
             b = paper[:, -dist:]
@@ -50,12 +49,9 @@ def solve(d):
         if direction == "y":
             a = paper[:dist, :]
             b = paper[-dist:, :]
-            # print("TOP")
             # pageprint(a)
-            # print("BOTTOM")
             # pageprint(b)
             paper = a | b[::-1, :]
-            # print("FOLDED")
             # pageprint(paper)
         if ct == 1:
             result_1 = np.sum(paper)
