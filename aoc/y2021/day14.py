@@ -2,7 +2,6 @@
 
 import sys
 from typing import Counter
-import numpy as np
 from aoc.y2021.utils import load_data
 
 
@@ -12,20 +11,19 @@ def digraphs_in(s):
 
 def solve(d):
     """actual solution with puzzle input"""
+    from time import time
+    from collections import defaultdict
+
+    now = time()
     result_1, result_2 = 0, 0
-    print("INPUT DATA:")
-    print(d)
-    string: str = d[0]
     initial_str = d[0]
     transforms = []
     for row in d[2:]:
         transforms.append(row.split(" -> "))
-    print(transforms)
-    print(string)
 
     """
     PART 1 THE INEFFICIENT WAY
-    """
+    string: str = d[0]
     for _ in range(10):
         holder = [
             "",
@@ -40,33 +38,45 @@ def solve(d):
         string = "".join([k + l for (k, l) in zip(string, holder)])
     counts = sorted([string.count(x) for x in set(string)])
     result_1 = counts[-1] - counts[0]
-
-    di_list = digraphs_in(initial_str)
-    counts = Counter(di_list)
+    """
 
     """
     PART 2 THE EFFICIENT WAY
     """
+    di_list = digraphs_in(initial_str)
+    counts = Counter(di_list)
     transform_map = {pair: letter for (pair, letter) in transforms}
-    for step in range(0, 40):
-        new_counts = Counter()
+    for step in range(0, 1000):
+
+        new_counts = defaultdict(lambda: 0)
         for digraph in counts:
             insertion = transform_map[digraph]
-            new_tri = digraph[0] + insertion + digraph[1]
-            new_counts[new_tri[:2]] += counts[digraph]
-            new_counts[new_tri[1:]] += counts[digraph]
+            new_counts[digraph[0] + insertion] += counts[digraph]
+            new_counts[insertion + digraph[1]] += counts[digraph]
         counts = new_counts
 
-        letters = set(out for _, out in transforms)
-        count_per_letter = {l: 0 for l in letters}
-        for digraph in counts:
-            for letter in count_per_letter:
-                count_per_letter[letter] += counts[digraph] * digraph.count(letter)
-        totals = sorted(v for _, v in count_per_letter.items())
+        if step in [9, 39, 999]:
+            # if step in [9, 39, 1000]:
+            letters = set(out for _, out in transforms)
+            count_per_letter = {l: 0 for l in letters}
+            for digraph in counts:
+                for letter in count_per_letter:
+                    count_per_letter[letter] += counts[digraph] * digraph.count(letter)
+            totals = sorted(v for _, v in count_per_letter.items())
         if step == 9:
             result_1 = (totals[-1] - totals[0]) // 2 + 1
         if step == 39:
             result_2 = (totals[-1] - totals[0]) // 2 + 1
+    letters = set(out for _, out in transforms)
+    count_per_letter = {l: 0 for l in letters}
+    for digraph in counts:
+        for letter in count_per_letter:
+            count_per_letter[letter] += counts[digraph] * digraph.count(letter)
+    totals = sorted(v for _, v in count_per_letter.items())
+    print(f"After {step+1} Iterations:")
+    print((totals[-1] - totals[0]) // 2 + 1)
+
+    print(f"Core Alg: Elapsed {time() - now:.3f}s")
 
     return result_1, result_2
 

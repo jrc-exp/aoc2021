@@ -1,6 +1,7 @@
 """ Day 0 Solutions """
 
 import sys
+from collections import defaultdict, Counter
 import numpy as np
 from aoc.y2021.utils import load_data
 
