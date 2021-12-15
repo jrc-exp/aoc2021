@@ -1,24 +1,15 @@
 """ Day 15 Solutions """
 
-from collections import defaultdict, Counter
+from bisect import bisect_left
+from collections import defaultdict, Counter, deque
 import sys
 import numpy as np
 from aoc.y2021.utils import load_data
 
 
 def heur(x, y, xs, ys):
-    # using euclidean distance, but it doesn't seem to matter what the heuristic is...
-    return np.sqrt((x - xs) ** 2 + (y - ys) ** 2)
-
-
-def best_f_score(fScore, open_set):
-    best = np.inf
-    for f in open_set:
-        s = fScore[f]
-        if s < best:
-            best = s
-            best_node = f
-    return best_node
+    # using manhattan distance
+    return abs(x - xs) + abs(y - ys)
 
 
 def reconstruct_path(came_from, node, path=[]):
@@ -37,19 +28,25 @@ def solve_maze(node_cost):
         for j in range(r):
             hcost[k, j] = heur(k, j, r, c)
 
-    open_set = set([(0, 0)])
+    # keep these sorted high to low so we can just call pop()
+    open_set = [(0, 0)]
+    # keep these sorted low to high in a deque because we have to call popleft()
+    open_set_f = deque([0.0])
     came_from = dict()
     g_score = defaultdict(lambda: np.inf)
     g_score[(0, 0)] = 0
-    h_score = defaultdict(lambda: np.inf)
-    h_score[(0, 0)] = hcost[0, 0]
+    f_score = defaultdict(lambda: np.inf)
+    f_score[(0, 0)] = hcost[0, 0]
     goal = (r - 1, c - 1)
+    ct = 0
     while open_set:
-        current = best_f_score(h_score, open_set)
+        ct += 1
+        # the lists are sorted so we just pop(0) here
+        current = open_set.pop()
+        open_set_f.popleft()
         if current == goal:
             path = reconstruct_path(came_from, current)
             break
-        open_set.remove(current)
         x, y = current
         for xm, ym in moves:
             xn, yn = x + xm, y + ym
@@ -60,9 +57,13 @@ def solve_maze(node_cost):
             if tentative_g_score < g_score[(xn, yn)]:
                 came_from[(xn, yn)] = current
                 g_score[(xn, yn)] = tentative_g_score
-                h_score[(xn, yn)] = tentative_g_score + hcost[xn, yn]
+                f_score[(xn, yn)] = tentative_g_score + hcost[xn, yn]
+                fn = f_score[(xn, yn)]
                 if (xn, yn) not in open_set:
-                    open_set.add((xn, yn))
+                    # insert the node sorted so we can pop(0) above
+                    idx = bisect_left(open_set_f, fn)
+                    open_set.insert(-idx if idx else len(open_set), (xn, yn))
+                    open_set_f.insert(idx, fn)
 
     cost = 0
     for x, y in path:
@@ -93,10 +94,7 @@ def solve(d):
     big_maze = np.zeros((5 * r, 5 * c))
     for x in range(5):
         for y in range(5):
-            tmp_node_cost = node_cost.copy()
-            tmp_node_cost += (x + y) % 9
-            tmp_node_cost[tmp_node_cost > 9] -= 9
-            big_maze[r * x : r * (x + 1), c * y : c * (y + 1)] = tmp_node_cost
+            big_maze[r * x : r * (x + 1), c * y : c * (y + 1)] = (node_cost + x + y - 1) % 9 + 1
 
     # pprint big maze:
     # for row in big_maze:
