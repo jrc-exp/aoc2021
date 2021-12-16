@@ -30,22 +30,19 @@ def solve_maze(node_cost):
         for j in range(r):
             hcost[k, j] = heur(k, j, r, c)
 
-    # keep these sorted high to low so we can just call pop()
+    # open_set queue
     open_set = [(0, 0, 0)]
-    # keep a look-up map/hash table for quick access to "if in"
+    # keep a look-up map/hash table for quick access to "if in open set"
     open_set_hash = defaultdict(lambda: False)
     open_set_hash[(0, 0)] = True
     came_from = dict()
     g_score = defaultdict(lambda: np.inf)
     g_score[(0, 0)] = 0
-    f_score = defaultdict(lambda: np.inf)
-    f_score[(0, 0)] = hcost[0, 0]
     goal = (r - 1, c - 1)
     ct = 0
     while open_set:
         ct += 1
-        # the lists are sorted so we just pop(0) here
-        _, x, y = heapq.heappop(open_set)  # .popleft()
+        _, x, y = heapq.heappop(open_set)
         current = (x, y)
         open_set_hash[current] = False
         if current == goal:
@@ -61,11 +58,8 @@ def solve_maze(node_cost):
             if tentative_g_score < g_score[(xn, yn)]:
                 came_from[(xn, yn)] = current
                 g_score[(xn, yn)] = tentative_g_score
-                f_score[(xn, yn)] = tentative_g_score + hcost[xn, yn]
-                fn = f_score[(xn, yn)]
+                fn = g_score[(xn, yn)]
                 if not open_set_hash[(xn, yn)]:
-                    # insert the node sorted so we can pop(0) above
-                    # insort_left(open_set, (fn, xn, yn))
                     heapq.heappush(open_set, (fn, xn, yn))
                     open_set_hash[(xn, yn)] = True
 
