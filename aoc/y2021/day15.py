@@ -1,8 +1,9 @@
 """ Day 15 Solutions """
 
-from bisect import bisect_left
+from bisect import insort_left
 from collections import defaultdict, Counter, deque
 import sys
+from networkx import Graph, DiGraph, shortest_path_length
 import numpy as np
 from aoc.y2021.utils import load_data
 
@@ -29,9 +30,10 @@ def solve_maze(node_cost):
             hcost[k, j] = heur(k, j, r, c)
 
     # keep these sorted high to low so we can just call pop()
-    open_set = [(0, 0)]
-    # keep these sorted low to high in a deque because we have to call popleft()
-    open_set_f = deque([0.0])
+    open_set = deque([(0, 0, 0)])
+    # keep a look-up map/hash table for quick access to "if in"
+    open_set_hash = defaultdict(lambda: False)
+    open_set_hash[(0, 0)] = True
     came_from = dict()
     g_score = defaultdict(lambda: np.inf)
     g_score[(0, 0)] = 0
@@ -42,8 +44,9 @@ def solve_maze(node_cost):
     while open_set:
         ct += 1
         # the lists are sorted so we just pop(0) here
-        current = open_set.pop()
-        open_set_f.popleft()
+        x, y, _ = open_set.popleft()
+        current = (x, y)
+        open_set_hash[current] = False
         if current == goal:
             path = reconstruct_path(came_from, current)
             break
@@ -59,11 +62,10 @@ def solve_maze(node_cost):
                 g_score[(xn, yn)] = tentative_g_score
                 f_score[(xn, yn)] = tentative_g_score + hcost[xn, yn]
                 fn = f_score[(xn, yn)]
-                if (xn, yn) not in open_set:
+                if not open_set_hash[(xn, yn)]:
                     # insert the node sorted so we can pop(0) above
-                    idx = bisect_left(open_set_f, fn)
-                    open_set.insert(-idx if idx else len(open_set), (xn, yn))
-                    open_set_f.insert(idx, fn)
+                    insort_left(open_set, (xn, yn, fn), key=lambda x: x[2])
+                    open_set_hash[(xn, yn)] = True
 
     cost = 0
     for x, y in path:
@@ -101,6 +103,23 @@ def solve(d):
     #     print("".join([str(int(k)) for k in row]))
 
     result_2 = solve_maze(big_maze)
+
+    """
+    # for posterity: here's how to use networkx for a directed graph:
+
+    from networkx import DiGraph, shortest_path_length
+    G = DiGraph()
+    moves = [[-1, 0], [0, -1], [1, 0], [0, 1]]
+    r, c = big_maze.shape
+    for x in range(r):
+        for y in range(c):
+            for xm, ym in moves:
+                xn, yn = x + xm, y + ym
+                if xn < 0 or xn >= r or yn < 0 or yn >= c:
+                    continue
+                G.add_edge((x, y), (xn, yn), weight=big_maze[xn, yn])
+    result_2 = shortest_path_length(G, (0, 0), (r - 1, c - 1), "weight")
+    """
 
     return result_1, result_2
 
