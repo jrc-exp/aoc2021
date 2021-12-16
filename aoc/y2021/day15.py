@@ -1,5 +1,6 @@
 """ Day 15 Solutions """
 
+import heapq
 from bisect import insort_left
 from collections import defaultdict, Counter, deque
 import sys
@@ -30,7 +31,7 @@ def solve_maze(node_cost):
             hcost[k, j] = heur(k, j, r, c)
 
     # keep these sorted high to low so we can just call pop()
-    open_set = deque([(0, 0, 0)])
+    open_set = [(0, 0, 0)]
     # keep a look-up map/hash table for quick access to "if in"
     open_set_hash = defaultdict(lambda: False)
     open_set_hash[(0, 0)] = True
@@ -44,7 +45,7 @@ def solve_maze(node_cost):
     while open_set:
         ct += 1
         # the lists are sorted so we just pop(0) here
-        x, y, _ = open_set.popleft()
+        _, x, y = heapq.heappop(open_set)  # .popleft()
         current = (x, y)
         open_set_hash[current] = False
         if current == goal:
@@ -64,7 +65,8 @@ def solve_maze(node_cost):
                 fn = f_score[(xn, yn)]
                 if not open_set_hash[(xn, yn)]:
                     # insert the node sorted so we can pop(0) above
-                    insort_left(open_set, (xn, yn, fn), key=lambda x: x[2])
+                    # insort_left(open_set, (fn, xn, yn))
+                    heapq.heappush(open_set, (fn, xn, yn))
                     open_set_hash[(xn, yn)] = True
 
     cost = 0
