@@ -9,11 +9,6 @@ import numpy as np
 from aoc.y2021.utils import load_data
 
 
-def heur(x, y, xs, ys):
-    # using manhattan distance
-    return abs(x - xs) + abs(y - ys)
-
-
 def reconstruct_path(came_from, node, path=[]):
     while node != (0, 0):
         path = [node] + path
@@ -25,10 +20,6 @@ def solve_maze(node_cost):
     cost = np.zeros_like(node_cost)
     r, c = node_cost.shape
     moves = [[-1, 0], [0, -1], [1, 0], [0, 1]]
-    hcost = np.zeros_like(node_cost)
-    for k in range(r):
-        for j in range(r):
-            hcost[k, j] = heur(k, j, r, c)
 
     # open_set queue
     open_set = [(0, 0, 0)]
@@ -123,7 +114,7 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = False
+    skip_test = True
     if not skip_test:
         print("**** TEST DATA ****")
         d = load_data("test_day15.txt")
