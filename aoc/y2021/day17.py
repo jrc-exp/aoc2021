@@ -9,8 +9,9 @@ from aoc.y2021.utils import load_data
 def ints(x):
     return list(map(int, x))
 
+
 def sim(vx, vy, xl, xh, yl, yh):
-    """ Run a sim """
+    """Run a sim"""
     above_or_in = True
     x, y = (0, 0)
     maxy = -np.inf
@@ -47,17 +48,17 @@ def solve(d):
     y = ints(y.split("=")[1].split(".."))
     xl, xh = x
     yl, yh = y
-    # can solve directly for vxmin and vxmax:
+    # can solve directly for vx_min and vx_max:
     vx_min = int(np.ceil(-0.5 + np.sqrt(0.5 ** 2 + 4 * 0.5 * xl)))
     vx_max = xh
     # if larger than this vymax it will potentially jump over the area in one step of the fall, I believe
     # not sure if this would hold if the target area was somewhere up high though because you could fly way above and fall down into it...
     # but these are negative so...
-    vymax = max(abs(yh), abs(yl))
+    vy_max = max(abs(yh), abs(yl))
     print(vx_min, vx_max)
 
     # try starting with the highest posssible until one goes in the zone:
-    vy_try = vymax
+    vy_try = vy_max
     while True:
         vx = vx_min
         vy = vy_try
@@ -78,19 +79,28 @@ def solve(d):
             step += 1
             x_pos += vx
             if xl <= x_pos <= xh:
-                in_zone_vxs.append(vxi)
-                break
+                in_zone_vxs.append((vxi, vx, step))
             vx -= 1
 
-    # check all possible y's for each x zone:
-    vymin = yl if yl > 0 else yl
+    # find the x's that ever enter the zone:
+    in_zone_vys = []
+    vy_min = yl if yl > 0 else yl
+    for vy in range(vy_min, vy_max + 1):
+        vyi = vy
+        y_pos = 0
+        step = 0
+        while y_pos > yl or vy > 0:
+            step += 1
+            y_pos += vy
+            if yl <= y_pos <= yh:
+                in_zone_vys.append((vyi, step))
+            vy -= 1
+
+    # check pairs of allowable speeds:
     in_set = set()
-    for vx in in_zone_vxs:
-        for vy in range(vymin, vymax):
-            x, y = (0, 0)
-            maxy = -np.inf
-            went_in, _ = sim(vx, vy, xl, xh, yl, yh)
-            if went_in:
+    for vx, vx_at_step, step_x in in_zone_vxs:
+        for vy, step_y in in_zone_vys:
+            if step_x == step_y or (vx_at_step == 0 and (step_y >= step_x)):
                 in_set.add((vx, vy))
 
     result_2 = len(in_set)
