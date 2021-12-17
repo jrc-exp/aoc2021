@@ -1,5 +1,6 @@
 """ Day 15 Solutions """
 
+from time import time
 import heapq
 from bisect import insort_left
 from collections import defaultdict, Counter, deque
@@ -74,15 +75,17 @@ def solve_maze(node_cost):
 
 def solve(d):
     """actual solution with puzzle input"""
+
     result_1, result_2 = 0, 0
     # print("INPUT DATA:")
     # print(d)
+    start = time()
     node_cost = np.zeros((len(d), len(d[0])))
     for idx, row in enumerate(d):
         node_cost[idx] = list(map(int, row))
-    print()
 
     result_1 = solve_maze(node_cost)
+    print(time() - start)
 
     # pprint small_maze:
     # for row in node_cost:
@@ -123,7 +126,7 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = False
+    skip_test = True
     if not skip_test:
         print("**** TEST DATA ****")
         d = load_data("test_day15.txt")
