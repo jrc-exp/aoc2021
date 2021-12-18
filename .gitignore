@@ -1,3 +1,4 @@
+pypy
 # based on https://github.com/github/gitignore/blob/master/Python.gitignore, revision 14f8a8b4c51ecc00b18905a95c117954e6c77b9d
 *.txt
 
