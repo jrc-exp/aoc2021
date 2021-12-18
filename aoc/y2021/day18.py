@@ -12,11 +12,12 @@ def add(a, b):
     return [a, b]
 
 
-def explode(a):
-    a = deepcopy(a)
+def explode(a, quiet=True):
     """EXPLOSIONS"""
+    a = deepcopy(a)
     # a,b,c,d / k,j,l.m
-    print("EXPLODING", a)
+    if not quiet:
+        print("EXPLODING", a)
     left_digit = None
     right_digit = None
     boom = False
@@ -29,6 +30,8 @@ def explode(a):
             if not boom:
                 left_digit = (idb,)
             else:
+                if not quiet:
+                    print("right", right_digit, "val", b, done)
                 right_digit = (idb,)
                 done = True
             continue
@@ -41,6 +44,8 @@ def explode(a):
                     left_digit = (idb, idc)
                 else:
                     right_digit = (idb, idc)
+                    if not quiet:
+                        print("right", right_digit, "val", c, done)
                     done = True
                 continue
             for idd, d in enumerate(c):
@@ -52,6 +57,8 @@ def explode(a):
                         left_digit = (idb, idc, idd)
                     else:
                         right_digit = (idb, idc, idd)
+                        if not quiet:
+                            print("right", right_digit, "val", d, done)
                         done = True
                     continue
                 for ide, e in enumerate(d):
@@ -62,17 +69,28 @@ def explode(a):
                             left_digit = (idb, idc, idd, ide)
                         else:
                             right_digit = (idb, idc, idd, ide)
+                            if not quiet:
+                                print("right", right_digit, "val", e, done)
                             done = True
                     else:
                         # depth 4
                         if not boom:
                             boom = True
                             boom_box = (idb, idc, idd, ide)
+                            if not quiet:
+                                print("boom box", boom_box)
+                        else:
+                            right_digit = (idb, idc, idd, ide, 0)
+                            if not quiet:
+                                print("right", right_digit, "val", e[0], done)
+                            done = True
     if not boom:
         return a
     left = get_idx(a, left_digit)
     boomer = get_idx(a, boom_box)
     right = get_idx(a, right_digit)
+    if not quiet:
+        print(left, boomer, right)
     x, y = boomer
     k, j, l, m = boom_box
     if right is not None:
@@ -88,6 +106,9 @@ def explode(a):
         if len(right_digit) == 4:
             q, w, e, r = right_digit
             a[q][w][e][r] = right + y
+        if len(right_digit) == 5:
+            q, w, e, r, t = right_digit
+            a[q][w][e][r][t] = right + y
     if left is not None:
         if len(left_digit) == 1:
             (q,) = left_digit
@@ -109,11 +130,12 @@ def split_int(a):
     return [int(np.floor(a / 2)), int(np.ceil(a / 2))]
 
 
-def split(a):
-    a = deepcopy(a)
+def split(a, quiet=True):
     """DOING SPLITS"""
+    a = deepcopy(a)
     # a,b,c,d / k,j,l.m
-    print("SPLITTING", a)
+    if not quiet:
+        print("SPLITTING", a)
     for idb, b in enumerate(a):
         # depth 1
         if isinstance(b, int):
@@ -153,12 +175,12 @@ def get_idx(a, idx_list):
     return out
 
 
-def reduce(a):
+def reduce(a, quiet=True):
     while explode(a) != split(a):
-        while explode(a) != a:
-            a = explode(a)
-        if split(a) != a:
-            a = split(a)
+        if explode(a) != a:
+            a = explode(a, quiet)
+        elif split(a) != a:
+            a = split(a, quiet)
     return a
 
 
@@ -221,16 +243,58 @@ def solve(d):
     assert explode([[[[0, 7], 4], [[7, 8], [0, [6, 7]]]], [1, 1]]) == [[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]
     assert reduce(add([[[[4, 3], 4], 4], [7, [[8, 4], 9]]], [1, 1])) == [[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]]
 
+    test_list = [[1, 1], [2, 2], [3, 3], [4, 4]]
+    out = test_list[0]
+    for step, a in enumerate(test_list[1:]):
+        out = add(out, a)
+        out = reduce(out)
+    print(out)
+
+    assert out == [[[[1, 1], [2, 2]], [3, 3]], [4, 4]]
+
+    out = add(out, [5, 5])
+    print("add 5,5", out)
+    out = reduce(out)
+    print("reduce", out)
+    assert out == [[[[3, 0], [5, 3]], [4, 4]], [5, 5]]
+
+    out = add(out, [6, 6])
+    out = reduce(out)
+    assert out == [[[[5, 0], [7, 4]], [5, 5]], [6, 6]]
+
     out = inputs[0]
     for step, a in enumerate(inputs[1:]):
-        print(f"Step {step}")
         out = add(out, a)
         out = reduce(out)
 
     print(out)
-    assert out == [[[[6, 6], [7, 6]], [[7, 7], [7, 0]]], [[[7, 7], [7, 7]], [[7, 8], [9, 9]]]]
+    # assert out == [[[[6, 6], [7, 6]], [[7, 7], [7, 0]]], [[[7, 7], [7, 7]], [[7, 8], [9, 9]]]]
 
-    assert 0 == 1
+    def mag(a):
+        if isinstance(a, int):
+            return a
+        if len(a) == 2:
+            return mag(a[0]) * 3 + mag(a[1]) * 2
+
+    assert mag([9, 1]) == 29, f"{mag([9, 1])} == 29"
+
+    result_1 = mag(out)
+
+    max_mag = 0
+    from tqdm import tqdm
+
+    inputs = list(inputs)
+    for idx, a in tqdm(enumerate(inputs), total=len(inputs)):
+        for idy, b in tqdm(enumerate(inputs), total=len(inputs), leave=False):
+            if idx == idy:
+                continue
+            m = mag(reduce(add(a, b)))
+            if m > max_mag:
+                max_mag = m
+            m = mag(reduce(add(b, a)))
+            if m > max_mag:
+                max_mag = m
+    result_2 = max_mag
 
     return result_1, result_2
 
@@ -243,7 +307,7 @@ def main():
         print("**** TEST DATA ****")
         d = load_data("test_day18.txt")
         test_answer_1 = 4140
-        test_answer_2 = 0
+        test_answer_2 = 3993
         test_solution_1, test_solution_2 = solve(d)
         assert test_solution_1 == test_answer_1, f"TEST #1 FAILED: TRUTH={test_answer_1}, YOURS={test_solution_1}"
         assert test_solution_2 == test_answer_2, f"TEST #2 FAILED: TRUTH={test_answer_2}, YOURS={test_solution_2}"
