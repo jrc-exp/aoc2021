@@ -103,6 +103,7 @@ def split(a):
     for idb, _ in enumerate(a):
         a[idb], changed = split(a[idb])
         if changed:
+            # we only split once and need to return!
             change = True
             break
 
@@ -152,6 +153,7 @@ def solve(d):
     # pylint: disable=pointless-string-statement
     # All the tests:
 
+    """
     assert add([[[[4, 3], 4], 4], [7, [[8, 4], 9]]], [1, 1]) == [[[[[4, 3], 4], 4], [7, [[8, 4], 9]]], [1, 1]]
     assert explode([[[[[4, 3], 4], 4], [7, [[8, 4], 9]]], [1, 1]])[0] == [[[[0, 7], 4], [7, [[8, 4], 9]]], [1, 1]]
     assert explode([[[[0, 7], 4], [7, [[8, 4], 9]]], [1, 1]])[0] == [[[[0, 7], 4], [15, [0, 13]]], [1, 1]]
@@ -176,7 +178,9 @@ def solve(d):
     out = reduce(out)
     assert out == [[[[5, 0], [7, 4]], [5, 5]], [6, 6]]
 
-    assert mag([9, 1]) == 29, f"{mag([9, 1])} == 29"
+    assert mag([9, 1]) == 29
+    """
+
     out = inputs[0]
     for a in inputs[1:]:
         out = add(out, a)
@@ -205,7 +209,7 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = False
+    skip_test = True
     if not skip_test:
         print("**** TEST DATA ****")
         d = load_data("test_day18.txt")
@@ -224,6 +228,8 @@ def main():
     answer_1, answer_2 = solve(d)
     print("Answer 1:", answer_1)
     print("Answer 2:", answer_2)
+    assert answer_1 == 4116
+    assert answer_2 == 4638
 
 
 if __name__ == "__main__":

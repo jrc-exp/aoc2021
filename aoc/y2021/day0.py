@@ -6,6 +6,10 @@ import numpy as np
 from aoc.y2021.utils import load_data
 
 
+def ints(x):
+    return list(map(int, x))
+
+
 def solve(d):
     """actual solution with puzzle input"""
     result_1, result_2 = 0, 0
