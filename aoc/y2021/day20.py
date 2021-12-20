@@ -1,121 +1,55 @@
 """ Day 20 Solutions """
-
-import sys
-from collections import defaultdict, Counter
-import numpy as np
 from aoc.y2021.utils import load_data
 
-
-def ints(x):
-    return list(map(int, x))
-
-
-def print_im(img_on, corners):
-    """Test"""
-    total = 0
-    for x in range(corners[0][0], corners[1][0] + 1):
-        bin = ""
-        for y in range(corners[0][1], corners[1][1] + 1):
-            if (x, y) in img_on:
-                bin += "#"
-                total += 1
-            else:
-                bin += "."
-        print(bin)
-    print("Total:", total)
+NBR8 = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 0),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+]
 
 
 def solve(d):
     """actual solution with puzzle input"""
     result_1, result_2 = 0, 0
-    print("INPUT DATA:")
-    print(d)
+
     key = d[0]
-    print(len(key))
     img_on = set()
     for idx, row in enumerate(d[2:]):
         for idy, l in enumerate(row):
             if l == "#":
                 img_on.add((idx, idy))
-    r, c = idx + 1, len(row)
-    corners = ((0, 0), (r - 1, r - 1))
 
-    neighbors = [
-        (-1, -1),
-        (-1, 0),
-        (-1, 1),
-        (0, -1),
-        (0, 0),
-        (0, 1),
-        (1, -1),
-        (1, 0),
-        (1, 1),
-    ]
-
-    for step in range(51):
-        if step > 49:
-            print_im(img_on, corners)
-        print("step corners", corners)
-        print("Step", step)
-        (a, b), (c, d) = corners
-        a -= 1
-        b -= 1
-        c += 1
-        d += 1
-        corners = (a, b), (c, d)
+    # assuming square grid everywhere:
+    grid_sz = len(d) - 1
+    for step in range(50):
+        low, high = -1 - step, grid_sz + step
+        # if we have the '#' at zero, add two rings of "#'s":
+        if key[0] == "#":
+            for x in (low, low - 1, high, high + 1):
+                for y in range(low - 1, high + 3):
+                    if step % 2 == 1:
+                        img_on.add((x, y))
+                        img_on.add((y, x))
         new_img = set()
-        buffer = 10
-        for x in range(a - buffer, c + buffer):
-            for y in range(b - buffer, d + buffer):
-                bin = "0"
-                for n in neighbors:
-                    k, j = x + n[0], y + n[1]
-                    bin += "1" if (k, j) in img_on else "0"
-                new_value = int(bin, 2)
-                if key[new_value] == "#":
-                    if abs(x - (a - buffer)) < 5 or abs((c + buffer) - x) < 5 or abs(y - (b - buffer)) < 5 or abs(y - (d + buffer)) < 5:
-                        continue
-                    else:
-                        new_img.add((x, y))
-
+        # compute one step outward in x/y each step:
+        # the infinite cells will not matter outside of this ring on the even steps:
+        for x in range(low, high + 1):
+            for y in range(low, high + 1):
+                word = "".join(["1" if (x + n[0], y + n[1]) in img_on else "0" for n in NBR8])
+                if key[int(word, 2)] == "#":
+                    new_img.add((x, y))
         img_on = new_img
 
-        xs = [x[0] for x in img_on]
-        ys = [x[1] for x in img_on]
-        corners = (min(xs), min(ys)), (max(xs), max(ys))
-        (a, b), (c, d) = corners
-        if step % 2 == 1:
-            new_img = set()
-            print("before", corners)
-            a += buffer
-            b += buffer
-            c -= buffer
-            d -= buffer
-            print("after", (a, b), (c, d))
-            for x in range(a, c + 1):
-                for y in range(b, d + 1):
-                    if (x, y) in img_on:
-                        new_img.add((x, y))
-            img_on = new_img
+        if step == 1:
+            result_1 = len(img_on)
+    result_2 = len(img_on)
 
-    # print_im(img_on, corners)
-
-    # total = 0
-    # (a, b), (c, d) = corners
-    # a += buffer // 2
-    # b += buffer // 2
-    # c -= buffer // 2
-    # d -= buffer // 2
-    # for x in range(a - 2, c + 2):
-    # for y in range(b - 2, d + 2):
-    # if (x, y) in img_on:
-    # total += 1
-    # result_1 = len(img_on)
-    # result_1 = total
-    # print("RESULT 1", len(img_on), total)
-    # print_im(img_on, ((a, b), (c, d)))
-    # result_1 = 36
-    result_1 = 35
     return result_1, result_2
 
 
@@ -139,6 +73,8 @@ def main():
     print("**** REAL DATA ****")
     d = load_data("day20.txt")
     answer_1, answer_2 = solve(d)
+    assert answer_1 == 5291
+    assert answer_2 == 16665
     print("Answer 1:", answer_1)
     print("Answer 2:", answer_2)
 
