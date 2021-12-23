@@ -34,7 +34,7 @@ class Cube:
     @property
     def off_ct(self):
         if self.covered:
-            return 0
+            return self.vol
         return sum([c.vol for c in self.off_cubes])
 
     @property
@@ -206,6 +206,7 @@ def main():
     print("Answer 1:", answer_1)
     print("Answer 2:", answer_2)
     assert answer_1 == 591365
+    assert answer_2 == 1211172281877240
 
 
 if __name__ == "__main__":
