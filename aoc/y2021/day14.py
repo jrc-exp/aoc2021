@@ -1,7 +1,8 @@
 """ Day 14 Solutions """
 
 import sys
-from typing import Counter
+from time import time
+from collections import defaultdict
 from aoc.y2021.utils import load_data
 
 
@@ -11,8 +12,6 @@ def digraphs_in(s):
 
 def solve(d):
     """actual solution with puzzle input"""
-    from time import time
-    from collections import defaultdict
 
     now = time()
     result_1, result_2 = 0, 0

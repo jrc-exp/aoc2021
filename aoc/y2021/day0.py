@@ -2,6 +2,7 @@
 
 import sys
 from collections import defaultdict, Counter
+from itertools import permutations, product
 import numpy as np
 from aoc.y2021.utils import load_data
 

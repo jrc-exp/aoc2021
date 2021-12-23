@@ -54,10 +54,8 @@ def solve(d):
             for roll in roll_counts:
                 for (scores, locs), count in states.items():
                     count = count * roll_counts[roll]
-                    locs = list(locs)
-                    scores = list(scores)
-                    locs[player] += roll
-                    locs[player] = (locs[player] - 1) % 10 + 1
+                    locs, scores = list(locs), list(scores)
+                    locs[player] = (locs[player] + roll - 1) % 10 + 1
                     scores[player] += locs[player]
                     if scores[player] >= 21:
                         wins[player] += count
