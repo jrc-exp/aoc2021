@@ -58,6 +58,13 @@ GOAL_NODES = {
     "D": (Node(2, 9), Node(3, 9)),
 }
 
+GOAL_NODES_BIG = {
+    "A": (Node(2, 3), Node(3, 3), Node(4, 3), Node(5, 3)),
+    "B": (Node(2, 5), Node(3, 5), Node(4, 5), Node(5, 5)),
+    "C": (Node(2, 7), Node(3, 7), Node(4, 7), Node(5, 7)),
+    "D": (Node(2, 9), Node(3, 9), Node(4, 9), Node(5, 9)),
+}
+
 GOAL_X = {
     "A": 3,
     "B": 5,
@@ -72,22 +79,9 @@ R = (0, 1)
 MOVES = (U, D, L, R)
 
 
-def in_hall(node):
-    return node.y == 1
-
-
-def done_moving(node, nodes):
-    char = nodes[node]
-    return in_goal(node, nodes) and nodes[node + D] in [WALL, char]
-
-
 def in_goal(node, char):
     assert char in "ABCD"
     return node in GOAL_NODES[char]
-
-
-def in_doorway(node):
-    return in_hall(node) and node.x in [3, 5, 7, 9]
 
 
 def is_open(node, nodes):
@@ -104,31 +98,33 @@ def path_clear(node1, node2, state, paths):
 
 NON_DOOR_NODES = [Node(1, x) for x in range(1, 12) if x not in [3, 5, 7, 9]]
 
-
-def full_moves(state, paths):
+# pylint: disable=dangerous-default-value
+def full_moves(state, paths, goal_nodes=GOAL_NODES):
     """full sized moves"""
     moves = []
     for node, char in state:
         # finished moving:
         if in_goal(node, char):
-            if node.y == 3:
-                # print(node, char, "finished")
-                continue
-            if (Node(3, node.x), char) in state:
-                # print(node, char, "finished")
+            # TODO(JRC): FIX THIS FOR ANY SIZE
+            for y in range(node.y, 4 if len(state) == 8 else 6):
+                if (Node(y, node.x), char) not in state:
+                    break
+            else:
                 continue
 
         goal_available = False
-        for node_out in GOAL_NODES[char]:
+        for node_out in goal_nodes[char]:
             if node_out == node:
                 continue
-            if node_out.y == 2:
-                if not ((Node(3, node_out.x), char) in state):
-                    continue
             cost = path_clear(node, node_out, state, paths)
-            if cost:
-                moves.append((cost * MOVE_COST[char], node, node_out))
-                goal_available = True
+            if not cost:
+                # if we can't get here, this needs to be a correct type
+                if (node_out, char) not in state:
+                    break
+                # if it's the right one at the bottom, we can check above
+                continue
+            moves.append((cost * MOVE_COST[char], node, node_out))
+            goal_available = True
             break
         if goal_available:
             continue
@@ -142,53 +138,6 @@ def full_moves(state, paths):
                 if cost:
                     moves.append((cost * MOVE_COST[char], node, node_out))
     return moves
-
-
-def toward_goal(node, d, nodes):
-    """is direction toward goal"""
-    char = nodes[node]
-    if GOAL_X[char] == node.x:
-        if d == D:
-            return True
-    if GOAL_X[char] < node.x:
-        if d == R:
-            return True
-    elif GOAL_X[char] > node.x:
-        if d == L:
-            return True
-    return False
-
-
-def goal_open(node, nodes):
-    """is the path clear to the goal?"""
-    char = nodes[node]
-    # check if the room is clear or has a friend in it
-    for spot in GOAL_NODES[char]:
-        # TODO(JRC): It's not ok if our friend is not at the bottom!
-        if not (is_open(spot, nodes) or nodes[spot] == char):
-            return False
-    doorway = Node(1, GOAL_X[char])
-    if node == doorway:
-        return True
-    if GOAL_X[char] < node.x:
-        spot = node
-        while spot is not doorway:
-            if is_open(spot + R, nodes):
-                spot = spot + R
-            else:
-                return False
-    elif GOAL_X[char] > node.x:
-        spot = node
-        while spot is not doorway:
-            if is_open(spot + L, nodes):
-                spot = spot + L
-            else:
-                return False
-    return True
-
-
-def move_cost(move, nodes):
-    return MOVE_COST[nodes[move[0]]]
 
 
 def print_board(state, spaces):
@@ -209,55 +158,6 @@ def print_board(state, spaces):
         print(x)
 
 
-def make_move(move, nodes, pod_locs):
-    """apply a move"""
-    node, node_out = move
-    assert is_open(node_out, nodes)
-    assert nodes[node] in "ABCD", f"{nodes[node]} and {move} and {pod_locs}/ {print_board(nodes)}"
-    nodes = deepcopy(nodes)
-    pod_locs = deepcopy(pod_locs)
-    nodes[node_out] = nodes[node]
-    nodes[node] = OPEN
-    pod_locs = [(dude, False) for dude, _ in pod_locs if dude != node]
-    pod_locs.append((node_out, True))
-    return nodes, pod_locs
-
-
-def to_state(pod_locs, nodes):
-    return tuple((d.y, d.x, nodes[d]) for (d, _) in pod_locs)
-
-
-from functools import cache
-
-
-@cache
-def transition(state, node_in, node_out):
-    """transition"""
-    # TODO: IMPLEMENT
-    print("transition", state, node_in, node_out)
-    char = ""
-    new_state = []
-    for y, x, char in state:
-        if x == node_in.x and y == node_in.y:
-            new_state.append((node_out.y, node_out.x, char))
-        else:
-            new_state.append((y, x, char))
-    print("transout", new_state)
-    return tuple(new_state)
-
-
-def from_state(state, nodes):
-    """from state"""
-    # calculate nodes
-    for node in nodes:
-        if nodes[node] in "ABCD":
-            nodes[node] = "."
-    for y, x, char in state:
-        nodes[Node(y, x)] = char
-    pod_locs = [(Node(y, x), 0) for (y, x, char) in state]
-    return nodes, pod_locs
-
-
 GOAL_STATE = frozenset(
     (
         (Node(2, 3), "A"),
@@ -271,14 +171,25 @@ GOAL_STATE = frozenset(
     )
 )
 
+GOAL_STATE_BIG = []
+for char, x in GOAL_X.items():
+    for y in range(2, 6):
+        GOAL_STATE_BIG.append((Node(y, x), char))
+print(GOAL_STATE_BIG)
+GOAL_STATE_BIG = frozenset(GOAL_STATE_BIG)
+
 
 def state_to_occupied(state):
     return set(n for n, c in state)
 
 
-def solve_maze(pod_locs, paths, spaces):
+def solve_maze(goal, pod_locs, paths, spaces):
     """solve maze"""
     # keep a look-up map/hash table for quick access to "if in open set"
+    if len(pod_locs) == 8:
+        goal_nodes = GOAL_NODES
+    else:
+        goal_nodes = GOAL_NODES_BIG
     open_set_hash = defaultdict(lambda: False)
     print("start_state", pod_locs)
     start_state = frozenset(pod_locs)
@@ -290,12 +201,9 @@ def solve_maze(pod_locs, paths, spaces):
     g_score = defaultdict(lambda: np.inf)
     g_score[start_state] = 0
     while open_set:
-        score, state = heapq.heappop(open_set)
+        _, state = heapq.heappop(open_set)
         open_set_hash[state] = False
-        if all(s in GOAL_STATE for s in state):
-            print(score)
-
-        moves = full_moves(state, paths)
+        moves = full_moves(state, paths, goal_nodes)
         for node_cost, node_in, node_out in moves:
             char = ""
             for n, c in state:
@@ -317,7 +225,7 @@ def solve_maze(pod_locs, paths, spaces):
                     heapq.heappush(open_set, (fn, out_state))
                     open_set_hash[out_state] = True
 
-    return g_score[GOAL_STATE]
+    return g_score[goal]
 
 
 def solve(d):
@@ -356,7 +264,7 @@ def solve(d):
     assert path_clear(Node(2, 9), Node(1, 1), pod_locs, paths) == 9
 
     # print(full_moves(pod_locs, paths))
-    result_1 = solve_maze(pod_locs, paths, spaces)
+    result_1 = solve_maze(GOAL_STATE, pod_locs, paths, spaces)
     nodes = {}
     pod_locs = []
     spaces = []
@@ -382,7 +290,7 @@ def solve(d):
             if node != node_out:
                 paths[(node, node_out)] = find_goal(node, node_out, [], neighbors)
 
-    result_2 = solve_maze(pod_locs, paths, spaces)
+    result_2 = solve_maze(GOAL_STATE_BIG, pod_locs, paths, spaces)
 
     return result_1, result_2
 
