@@ -1,4 +1,5 @@
 """ Day 23 Solutions """
+from argparse import ArgumentParser
 import heapq
 from functools import cache
 import sys
@@ -88,8 +89,7 @@ def is_open(node, nodes):
     return nodes[node] == OPEN
 
 
-def path_clear(node1, node2, state, paths):
-    occupied = set(node for node, _ in state)
+def path_clear(node1, node2, state, paths, occupied):
     path = paths[(node1, node2)]
     if all(node not in occupied for node in path[1:]):
         return len(path) - 1
@@ -102,6 +102,7 @@ NON_DOOR_NODES = [Node(1, x) for x in range(1, 12) if x not in [3, 5, 7, 9]]
 def full_moves(state, paths, goal_nodes=GOAL_NODES):
     """full sized moves"""
     moves = []
+    occupied = set(node for node, _ in state)
     for node, char in state:
         # finished moving:
         if in_goal(node, char):
@@ -113,10 +114,10 @@ def full_moves(state, paths, goal_nodes=GOAL_NODES):
                 continue
 
         goal_available = False
-        for node_out in goal_nodes[char]:
+        for node_out in reversed(goal_nodes[char]):
             if node_out == node:
                 continue
-            cost = path_clear(node, node_out, state, paths)
+            cost = path_clear(node, node_out, state, paths, occupied)
             if not cost:
                 # if we can't get here, this needs to be a correct type
                 if (node_out, char) not in state:
@@ -132,9 +133,7 @@ def full_moves(state, paths, goal_nodes=GOAL_NODES):
         # if we're not finished, but in a lower place we can maybe move to the hall
         if node.y > 1:
             for node_out in NON_DOOR_NODES:
-                if node_out == node:
-                    continue
-                cost = path_clear(node, node_out, state, paths)
+                cost = path_clear(node, node_out, state, paths, occupied)
                 if cost:
                     moves.append((cost * MOVE_COST[char], node, node_out))
     return moves
@@ -142,7 +141,7 @@ def full_moves(state, paths, goal_nodes=GOAL_NODES):
 
 def print_board(state, spaces):
     """print the board"""
-    for row in range(5):
+    for row in range(5 if len(state) == 8 else 7):
         x = ""
         for char in range(13):
             for c in "ABCD":
@@ -183,9 +182,10 @@ def state_to_occupied(state):
     return set(n for n, c in state)
 
 
-def solve_maze(goal, pod_locs, paths, spaces):
+def solve_puzzle(goal, pod_locs, paths, spaces):
     """solve maze"""
     # keep a look-up map/hash table for quick access to "if in open set"
+    print_board(pod_locs, spaces)
     if len(pod_locs) == 8:
         goal_nodes = GOAL_NODES
     else:
@@ -225,7 +225,16 @@ def solve_maze(goal, pod_locs, paths, spaces):
                     heapq.heappush(open_set, (fn, out_state))
                     open_set_hash[out_state] = True
 
-    return g_score[goal]
+    path = [goal]
+    state = came_from[goal]
+    while True:
+        state = came_from.get(state, None)
+        if not state:
+            break
+        path.append(state)
+    path = list(reversed(path))
+
+    return g_score[goal], path
 
 
 def solve(d):
@@ -257,19 +266,20 @@ def solve(d):
             if node != node_out:
                 paths[(node, node_out)] = find_goal(node, node_out, [], neighbors)
 
-    assert path_clear(Node(3, 7), Node(1, 10), pod_locs, paths) == 0
-    assert path_clear(Node(2, 7), Node(1, 7), pod_locs, paths) == 1
-    assert path_clear(Node(2, 7), Node(1, 8), pod_locs, paths) == 2
-    assert path_clear(Node(3, 3), Node(1, 7), pod_locs, paths) == 0
-    assert path_clear(Node(2, 9), Node(1, 1), pod_locs, paths) == 9
+    occupied = set(node for node, _ in pod_locs)
+    assert path_clear(Node(3, 7), Node(1, 10), pod_locs, paths, occupied) == 0
+    assert path_clear(Node(2, 7), Node(1, 7), pod_locs, paths, occupied) == 1
+    assert path_clear(Node(2, 7), Node(1, 8), pod_locs, paths, occupied) == 2
+    assert path_clear(Node(3, 3), Node(1, 7), pod_locs, paths, occupied) == 0
+    assert path_clear(Node(2, 9), Node(1, 1), pod_locs, paths, occupied) == 9
 
     # print(full_moves(pod_locs, paths))
-    result_1 = solve_maze(GOAL_STATE, pod_locs, paths, spaces)
+    result_1, _ = solve_puzzle(GOAL_STATE, pod_locs, paths, spaces)
     nodes = {}
     pod_locs = []
     spaces = []
     bonus_lines = load_data("day23_p2.txt")
-    d = d[:2] + bonus_lines + d[2:]
+    d = d[:3] + bonus_lines + d[3:]
     for idx, row in enumerate(d):
         for idy, char in enumerate(row):
             nodes[Node(idx, idy)] = char
@@ -290,13 +300,16 @@ def solve(d):
             if node != node_out:
                 paths[(node, node_out)] = find_goal(node, node_out, [], neighbors)
 
-    result_2 = solve_maze(GOAL_STATE_BIG, pod_locs, paths, spaces)
+    result_2, path = solve_puzzle(GOAL_STATE_BIG, pod_locs, paths, spaces)
+    for idx, step in enumerate(path):
+        print("Step", idx)
+        print_board(step, spaces)
 
     return result_1, result_2
 
 
 def find_goal(start, goal, path, neighbors):
-    """Find the path from a scanner to the origin scanner"""
+    """Find the shortest path from a node to another node"""
     if goal in neighbors[start]:
         return path + [start, goal]
     for node in neighbors[start]:
@@ -310,9 +323,11 @@ def find_goal(start, goal, path, neighbors):
 
 def main():
     """Main function"""
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
     # load data:
-    skip_test = False
-    if not skip_test:
+    if not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day23.txt")
         test_answer_1 = 12521

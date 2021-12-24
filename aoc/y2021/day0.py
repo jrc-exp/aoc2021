@@ -1,5 +1,6 @@
 """ Day 0 Solutions """
 
+from argparse import ArgumentParser
 import sys
 from collections import defaultdict, Counter
 from itertools import permutations, product
@@ -21,9 +22,11 @@ def solve(d):
 
 def main():
     """Main function"""
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
     # load data:
-    skip_test = False
-    if not skip_test:
+    if not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day0.txt")
         test_answer_1 = TEST_ANSWER
