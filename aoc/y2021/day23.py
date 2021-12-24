@@ -1,9 +1,11 @@
 """ Day 23 Solutions """
-
+import heapq
+from functools import cache
 import sys
 from copy import deepcopy
 from collections import defaultdict, Counter
 from itertools import permutations, product
+from unittest import result
 import numpy as np
 from aoc.y2021.utils import load_data
 
@@ -28,6 +30,13 @@ class Node:
     def __init__(self, y, x):
         self.y = y
         self.x = x
+
+    def __lt__(self, z):
+        if self.x < z.x:
+            return True
+        elif self.y < z.y:
+            return True
+        return False
 
     def __add__(self, z):
         return Node(self.y + z[0], self.x + z[1])
@@ -72,8 +81,8 @@ def done_moving(node, nodes):
     return in_goal(node, nodes) and nodes[node + D] in [WALL, char]
 
 
-def in_goal(node, nodes):
-    char = nodes[node]
+def in_goal(node, char):
+    assert char in "ABCD"
     return node in GOAL_NODES[char]
 
 
@@ -85,45 +94,53 @@ def is_open(node, nodes):
     return nodes[node] == OPEN
 
 
-def legal_moves(nodes, dudes, first_move=False):
-    """FIND LEGAL MOVES FROM POSITION"""
-    moves = []
-    # if anyone is in the doorway, they must keep moving immediately
-    for (node, _) in dudes:
-        char = nodes[node]
-        if in_doorway(node):
-            # you have to move into goal if it's chill
-            if node + D in GOAL_NODES[char]:
-                if goal_open(node, nodes):
-                    return [(node, node + D)]
-            # otherwise you go left or right if there's room
-            if is_open(node + L, nodes):
-                moves.append((node, node + L))
-            if is_open(node + R, nodes):
-                moves.append((node, node + R))
-            return moves
+def path_clear(node1, node2, state, paths):
+    occupied = set(node for node, _ in state)
+    path = paths[(node1, node2)]
+    if all(node not in occupied for node in path[1:]):
+        return len(path) - 1
+    return 0
 
-    for (node, moving) in dudes:
-        char = nodes[node]
-        if done_moving(node, nodes):
-            # print(char, "at", node, "is done.")
+
+NON_DOOR_NODES = [Node(1, x) for x in range(1, 12) if x not in [3, 5, 7, 9]]
+
+
+def full_moves(state, paths):
+    """full sized moves"""
+    moves = []
+    for node, char in state:
+        # finished moving:
+        if in_goal(node, char):
+            if node.y == 3:
+                # print(node, char, "finished")
+                continue
+            if (Node(3, node.x), char) in state:
+                # print(node, char, "finished")
+                continue
+
+        goal_available = False
+        for node_out in GOAL_NODES[char]:
+            if node_out == node:
+                continue
+            if node_out.y == 2:
+                if not ((Node(3, node_out.x), char) in state):
+                    continue
+            cost = path_clear(node, node_out, state, paths)
+            if cost:
+                moves.append((cost * MOVE_COST[char], node, node_out))
+                goal_available = True
+            break
+        if goal_available:
             continue
 
-        # we either have to be moving or have an open goal
-        for d in MOVES:
-            if not is_open(node + d, nodes):
-                continue
-            # we can only go down if we're aligned
-            if d == D and node.x is not GOAL_X[char]:
-                continue
-            if moving or first_move or goal_open(node, nodes):
-                if moving or first_move:
-                    moves.append((node, node + d))
-                elif toward_goal(node, d, nodes):
-                    moves.append((node, node + d))
-            # we can start to leave our room though:
-            elif d == U and node.y > 1:
-                moves.append((node, node + U))
+        # if we're not finished, but in a lower place we can maybe move to the hall
+        if node.y > 1:
+            for node_out in NON_DOOR_NODES:
+                if node_out == node:
+                    continue
+                cost = path_clear(node, node_out, state, paths)
+                if cost:
+                    moves.append((cost * MOVE_COST[char], node, node_out))
     return moves
 
 
@@ -174,50 +191,133 @@ def move_cost(move, nodes):
     return MOVE_COST[nodes[move[0]]]
 
 
-def print_board(nodes, dudes=None):
+def print_board(state, spaces):
+    """print the board"""
     for row in range(5):
         x = ""
         for char in range(13):
-            x += nodes.get(Node(row, char), "")
+            for c in "ABCD":
+                if (Node(row, char), c) in state:
+                    x += c
+                    break
+            else:
+                if Node(row, char) in spaces:
+                    x += "."
+                else:
+                    x += "#"
+
         print(x)
-    if dudes:
-        print(dudes)
 
 
-def make_move(move, nodes, dudes):
+def make_move(move, nodes, pod_locs):
     """apply a move"""
     node, node_out = move
     assert is_open(node_out, nodes)
-    assert nodes[node] in "ABCD", f"{nodes[node]} and {move} and {dudes}/ {print_board(nodes)}"
+    assert nodes[node] in "ABCD", f"{nodes[node]} and {move} and {pod_locs}/ {print_board(nodes)}"
     nodes = deepcopy(nodes)
-    dudes = deepcopy(dudes)
+    pod_locs = deepcopy(pod_locs)
     nodes[node_out] = nodes[node]
     nodes[node] = OPEN
-    dudes = [(dude, False) for dude, _ in dudes if dude != node]
-    dudes.append((node_out, True))
-    return nodes, dudes
+    pod_locs = [(dude, False) for dude, _ in pod_locs if dude != node]
+    pod_locs.append((node_out, True))
+    return nodes, pod_locs
 
 
-def find_paths(nodes, dudes, moves, first_move=False):
-    """find paths"""
-    nodes = deepcopy(nodes)
-    dudes = deepcopy(dudes)
-    if all(in_goal(dude, nodes) for dude, _ in dudes):
-        print("Done!")
-        return moves
-    all_paths = []
-    for move in legal_moves(nodes, dudes, first_move):
-        # don't repeat a move
-        if moves and move[0] == moves[-1][1] and move[1] == moves[-1][0]:
-            continue
-        tnodes, tdudes = make_move(move, nodes, dudes)
-        all_paths = all_paths + [find_paths(tnodes, tdudes, moves + [move])]
-    return all_paths
+def to_state(pod_locs, nodes):
+    return tuple((d.y, d.x, nodes[d]) for (d, _) in pod_locs)
 
 
-##################################################################################################################
-# TODO: Run Djikstra except use only "legal_moves" at a step, and track the 8-letter states for best cost so far #
-##################################################################################################################
+from functools import cache
+
+
+@cache
+def transition(state, node_in, node_out):
+    """transition"""
+    # TODO: IMPLEMENT
+    print("transition", state, node_in, node_out)
+    char = ""
+    new_state = []
+    for y, x, char in state:
+        if x == node_in.x and y == node_in.y:
+            new_state.append((node_out.y, node_out.x, char))
+        else:
+            new_state.append((y, x, char))
+    print("transout", new_state)
+    return tuple(new_state)
+
+
+def from_state(state, nodes):
+    """from state"""
+    # calculate nodes
+    for node in nodes:
+        if nodes[node] in "ABCD":
+            nodes[node] = "."
+    for y, x, char in state:
+        nodes[Node(y, x)] = char
+    pod_locs = [(Node(y, x), 0) for (y, x, char) in state]
+    return nodes, pod_locs
+
+
+GOAL_STATE = frozenset(
+    (
+        (Node(2, 3), "A"),
+        (Node(3, 3), "A"),
+        (Node(2, 5), "B"),
+        (Node(3, 5), "B"),
+        (Node(2, 7), "C"),
+        (Node(3, 7), "C"),
+        (Node(2, 9), "D"),
+        (Node(3, 9), "D"),
+    )
+)
+
+
+def state_to_occupied(state):
+    return set(n for n, c in state)
+
+
+def solve_maze(pod_locs, paths, spaces):
+    """solve maze"""
+    # keep a look-up map/hash table for quick access to "if in open set"
+    open_set_hash = defaultdict(lambda: False)
+    print("start_state", pod_locs)
+    start_state = frozenset(pod_locs)
+    open_set_hash[start_state] = True
+    open_set = [
+        (0, start_state),
+    ]
+    came_from = dict()
+    g_score = defaultdict(lambda: np.inf)
+    g_score[start_state] = 0
+    while open_set:
+        score, state = heapq.heappop(open_set)
+        open_set_hash[state] = False
+        if all(s in GOAL_STATE for s in state):
+            print(score)
+
+        moves = full_moves(state, paths)
+        for node_cost, node_in, node_out in moves:
+            char = ""
+            for n, c in state:
+                if node_in == n:
+                    char = c
+            out_state = [(n, c) for (n, c) in state if n != node_in]
+            out_state.append((node_out, char))
+            out_state = frozenset(out_state)
+            out_nodes = [n for (n, _) in out_state]
+            count = Counter(out_nodes)
+            # print((node_in, node_out), out_state)
+            assert all(count[k] == 1 for k in count)
+            tentative_g_score = g_score[state] + node_cost
+            if tentative_g_score < g_score[out_state]:
+                came_from[out_state] = state
+                g_score[out_state] = tentative_g_score
+                fn = g_score[out_state]
+                if not open_set_hash[out_state]:
+                    heapq.heappush(open_set, (fn, out_state))
+                    open_set_hash[out_state] = True
+
+    return g_score[GOAL_STATE]
 
 
 def solve(d):
@@ -225,23 +325,79 @@ def solve(d):
     result_1, result_2 = 0, 0
     print("INPUT DATA:")
     print(d)
+    # part 1
     nodes = {}
-    dudes = []
+    pod_locs = []
+    spaces = []
     for idx, row in enumerate(d):
         for idy, char in enumerate(row):
             nodes[Node(idx, idy)] = char
+            if char in "ABCD.":
+                spaces.append(Node(idx, idy))
             if char in "ABCD":
-                dudes.append((Node(idx, idy), 0))
+                pod_locs.append((Node(idx, idy), char))
 
-    # print("Legal Moves")
-    # for move in legal_moves(nodes, dudes, first_move=True):
-    # print(move, move_cost(move, nodes))
+    neighbors = defaultdict(list)
+    for node in spaces:
+        for move in MOVES:
+            if node + move in spaces:
+                neighbors[node].append(node + move)
 
-    paths = find_paths(nodes, dudes, [], first_move=True)
-    for path in paths:
-        print(path)
+    paths = {}
+    for node in spaces:
+        for node_out in spaces:
+            if node != node_out:
+                paths[(node, node_out)] = find_goal(node, node_out, [], neighbors)
+
+    assert path_clear(Node(3, 7), Node(1, 10), pod_locs, paths) == 0
+    assert path_clear(Node(2, 7), Node(1, 7), pod_locs, paths) == 1
+    assert path_clear(Node(2, 7), Node(1, 8), pod_locs, paths) == 2
+    assert path_clear(Node(3, 3), Node(1, 7), pod_locs, paths) == 0
+    assert path_clear(Node(2, 9), Node(1, 1), pod_locs, paths) == 9
+
+    # print(full_moves(pod_locs, paths))
+    result_1 = solve_maze(pod_locs, paths, spaces)
+    nodes = {}
+    pod_locs = []
+    spaces = []
+    bonus_lines = load_data("day23_p2.txt")
+    d = d[:2] + bonus_lines + d[2:]
+    for idx, row in enumerate(d):
+        for idy, char in enumerate(row):
+            nodes[Node(idx, idy)] = char
+            if char in "ABCD.":
+                spaces.append(Node(idx, idy))
+            if char in "ABCD":
+                pod_locs.append((Node(idx, idy), char))
+
+    neighbors = defaultdict(list)
+    for node in spaces:
+        for move in MOVES:
+            if node + move in spaces:
+                neighbors[node].append(node + move)
+
+    paths = {}
+    for node in spaces:
+        for node_out in spaces:
+            if node != node_out:
+                paths[(node, node_out)] = find_goal(node, node_out, [], neighbors)
+
+    result_2 = solve_maze(pod_locs, paths, spaces)
 
     return result_1, result_2
+
+
+def find_goal(start, goal, path, neighbors):
+    """Find the path from a scanner to the origin scanner"""
+    if goal in neighbors[start]:
+        return path + [start, goal]
+    for node in neighbors[start]:
+        visited = set(a for a in path)
+        if node not in visited:
+            goal_path = find_goal(node, goal, path + [start], neighbors)
+            if goal_path is not None:
+                return goal_path
+    return None
 
 
 def main():
@@ -252,7 +408,7 @@ def main():
         print("**** TEST DATA ****")
         d = load_data("test_day23.txt")
         test_answer_1 = 12521
-        test_answer_2 = 0
+        test_answer_2 = 44169
         test_solution_1, test_solution_2 = solve(d)
         assert test_solution_1 == test_answer_1, f"TEST #1 FAILED: TRUTH={test_answer_1}, YOURS={test_solution_1}"
         assert test_solution_2 == test_answer_2, f"TEST #2 FAILED: TRUTH={test_answer_2}, YOURS={test_solution_2}"
