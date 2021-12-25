@@ -33,34 +33,18 @@ MOVE_COST = {
 }
 
 
-from typing import NamedTuple
-
-
-class Node(NamedTuple):
-    """NODE HELPER"""
-
-    y: int
-    x: int
-
-    def __add__(self, z):
-        return Node(self.y + z[0], self.x + z[1])
-
-    def __repr__(self):
-        return f"({self.y}, {self.x})"
-
-
 GOAL_NODES = {
-    "A": (Node(2, 3), Node(3, 3)),
-    "B": (Node(2, 5), Node(3, 5)),
-    "C": (Node(2, 7), Node(3, 7)),
-    "D": (Node(2, 9), Node(3, 9)),
+    "A": ((2, 3), (3, 3)),
+    "B": ((2, 5), (3, 5)),
+    "C": ((2, 7), (3, 7)),
+    "D": ((2, 9), (3, 9)),
 }
 
 GOAL_NODES_BIG = {
-    "A": (Node(2, 3), Node(3, 3), Node(4, 3), Node(5, 3)),
-    "B": (Node(2, 5), Node(3, 5), Node(4, 5), Node(5, 5)),
-    "C": (Node(2, 7), Node(3, 7), Node(4, 7), Node(5, 7)),
-    "D": (Node(2, 9), Node(3, 9), Node(4, 9), Node(5, 9)),
+    "A": ((2, 3), (3, 3), (4, 3), (5, 3)),
+    "B": ((2, 5), (3, 5), (4, 5), (5, 5)),
+    "C": ((2, 7), (3, 7), (4, 7), (5, 7)),
+    "D": ((2, 9), (3, 9), (4, 9), (5, 9)),
 }
 
 GOAL_X = {
@@ -77,13 +61,9 @@ R = (0, 1)
 MOVES = (U, D, L, R)
 
 
-def in_goal(node, char):
-    assert char in "ABCD"
-    return node in GOAL_NODES[char]
-
-
-def is_open(node, nodes):
-    return nodes[node] == OPEN
+def in_goal(node, letter):
+    assert letter in "ABCD"
+    return node in GOAL_NODES[letter]
 
 
 def path_clear(node1, node2, paths, occupied):
@@ -94,46 +74,46 @@ def path_clear(node1, node2, paths, occupied):
     return 0
 
 
-NON_DOOR_NODES = [Node(1, x) for x in range(1, 12) if x not in [3, 5, 7, 9]]
+NON_DOOR_NODES = [(1, x) for x in range(1, 12) if x not in [3, 5, 7, 9]]
 
 # pylint: disable=dangerous-default-value
 def full_moves(state, paths, goal_nodes=GOAL_NODES):
     """full sized moves"""
     moves = []
     occupied = set(node for node, _ in state)
-    for node, char in state:
+    for node, letter in state:
         # finished moving:
-        if in_goal(node, char):
+        if in_goal(node, letter):
             # TODO(JRC): FIX THIS FOR ANY SIZE
-            for y in range(node.y, 4 if len(state) == 8 else 6):
-                if (Node(y, node.x), char) not in state:
+            for y in range(node[0], 4 if len(state) == 8 else 6):
+                if ((y, node[1]), letter) not in state:
                     break
             else:
                 continue
 
         goal_available = False
-        for node_out in reversed(goal_nodes[char]):
+        for node_out in reversed(goal_nodes[letter]):
             if node_out == node:
                 continue
             cost = path_clear(node, node_out, paths, occupied)
             if not cost:
                 # if we can't get here, this needs to be a correct type
-                if (node_out, char) not in state:
+                if (node_out, letter) not in state:
                     break
                 # if it's the right one at the bottom, we can check above
                 continue
-            moves.append((cost * MOVE_COST[char], node, node_out))
+            moves.append((cost * MOVE_COST[letter], node, node_out))
             goal_available = True
             break
         if goal_available:
             continue
 
         # if we're not finished, but in a lower place we can maybe move to the hall
-        if node.y > 1:
+        if node[0] > 1:
             for node_out in NON_DOOR_NODES:
                 cost = path_clear(node, node_out, paths, occupied)
                 if cost:
-                    moves.append((cost * MOVE_COST[char], node, node_out))
+                    moves.append((cost * MOVE_COST[letter], node, node_out))
     return moves
 
 
@@ -141,13 +121,13 @@ def print_board(state, spaces):
     """print the board"""
     for row in range(5 if len(state) == 8 else 7):
         x = ""
-        for char in range(13):
+        for letter in range(13):
             for c in "ABCD":
-                if (Node(row, char), c) in state:
+                if ((row, letter), c) in state:
                     x += c
                     break
             else:
-                if Node(row, char) in spaces:
+                if (row, letter) in spaces:
                     x += "."
                 else:
                     x += "#"
@@ -157,33 +137,42 @@ def print_board(state, spaces):
 
 GOAL_STATE = frozenset(
     (
-        (Node(2, 3), "A"),
-        (Node(3, 3), "A"),
-        (Node(2, 5), "B"),
-        (Node(3, 5), "B"),
-        (Node(2, 7), "C"),
-        (Node(3, 7), "C"),
-        (Node(2, 9), "D"),
-        (Node(3, 9), "D"),
+        ((2, 3), "A"),
+        ((3, 3), "A"),
+        ((2, 5), "B"),
+        ((3, 5), "B"),
+        ((2, 7), "C"),
+        ((3, 7), "C"),
+        ((2, 9), "D"),
+        ((3, 9), "D"),
     )
 )
 
 GOAL_STATE_BIG = []
-for char, x in GOAL_X.items():
+for letter, x in GOAL_X.items():
     for y in range(2, 6):
-        GOAL_STATE_BIG.append((Node(y, x), char))
+        GOAL_STATE_BIG.append(((y, x), letter))
 print(GOAL_STATE_BIG)
 GOAL_STATE_BIG = frozenset(GOAL_STATE_BIG)
 
 
-# @cache
+@cache
+def heur_node(node, letter):
+    h = MOVE_COST[letter] * abs(node[1] - GOAL_X[letter])
+    if node[0] > 1 and node[1] != GOAL_X[letter]:
+        h += MOVE_COST[letter]
+    return h
+
+
 def heur(out_state):
-    # one heuristic that is "fast" is that everything has to move
-    # at least their x-distance from the goal column to be finished
-    # but this doesn't seem to be enough to speed the search
+    """
+    one heuristic that is "fast" is that everything has to move
+    at least their x-distance from the goal column to be finished
+    but this doesn't seem to be enough to speed the search
+    """
     h = 0
-    for node, char in out_state:
-        h += MOVE_COST[char] * abs(node.x - GOAL_X[char])
+    for node, letter in out_state:
+        h += heur_node(node, letter)
     return h
 
 
@@ -210,12 +199,13 @@ def solve_puzzle(goal, pod_locs, paths, spaces):
         open_set_hash[state] = False
         moves = full_moves(state, paths, goal_nodes)
         for node_cost, node_in, node_out in moves:
-            char = ""
+            letter = ""
             for n, c in state:
                 if node_in == n:
-                    char = c
-            out_state = [(n, c) for (n, c) in state if n != node_in]
-            out_state.append((node_out, char))
+                    letter = c
+            out_state = list(state)
+            out_state.remove((node_in, letter))
+            out_state.append((node_out, letter))
             out_state = frozenset(out_state)
             out_nodes = [n for (n, _) in out_state]
             count = Counter(out_nodes)
@@ -224,7 +214,8 @@ def solve_puzzle(goal, pod_locs, paths, spaces):
             if tentative_g_score < g_score[out_state]:
                 came_from[out_state] = state
                 g_score[out_state] = tentative_g_score
-                fn = g_score[out_state] + heur(out_state)
+                # slower with the heuristic... *sigh*
+                fn = g_score[out_state]  # + heur(out_state)
                 if not open_set_hash[out_state]:
                     heapq.heappush(open_set, (fn, out_state))
                     open_set_hash[out_state] = True
@@ -251,18 +242,19 @@ def solve(d):
     pod_locs = []
     spaces = []
     for idx, row in enumerate(d):
-        for idy, char in enumerate(row):
-            nodes[Node(idx, idy)] = char
-            if char in "ABCD.":
-                spaces.append(Node(idx, idy))
-            if char in "ABCD":
-                pod_locs.append((Node(idx, idy), char))
+        for idy, letter in enumerate(row):
+            nodes[(idx, idy)] = letter
+            if letter in "ABCD.":
+                spaces.append((idx, idy))
+            if letter in "ABCD":
+                pod_locs.append(((idx, idy), letter))
 
     neighbors = defaultdict(list)
     for node in spaces:
         for move in MOVES:
-            if node + move in spaces:
-                neighbors[node].append(node + move)
+            neighb = (node[0] + move[0], node[1] + move[1])
+            if neighb in spaces:
+                neighbors[node].append(neighb)
 
     paths = {}
     for node in spaces:
@@ -271,11 +263,11 @@ def solve(d):
                 paths[(node, node_out)] = set(find_goal(node, node_out, [], neighbors)[1:])
 
     occupied = set(node for node, _ in pod_locs)
-    assert path_clear(Node(3, 7), Node(1, 10), paths, occupied) == 0
-    assert path_clear(Node(2, 7), Node(1, 7), paths, occupied) == 1
-    assert path_clear(Node(2, 7), Node(1, 8), paths, occupied) == 2
-    assert path_clear(Node(3, 3), Node(1, 7), paths, occupied) == 0
-    assert path_clear(Node(2, 9), Node(1, 1), paths, occupied) == 9
+    assert path_clear((3, 7), (1, 10), paths, occupied) == 0
+    assert path_clear((2, 7), (1, 7), paths, occupied) == 1
+    assert path_clear((2, 7), (1, 8), paths, occupied) == 2
+    assert path_clear((3, 3), (1, 7), paths, occupied) == 0
+    assert path_clear((2, 9), (1, 1), paths, occupied) == 9
 
     # print(full_moves(pod_locs, paths))
     result_1, _ = solve_puzzle(GOAL_STATE, pod_locs, paths, spaces)
@@ -285,18 +277,19 @@ def solve(d):
     bonus_lines = load_data("day23_p2.txt")
     d = d[:3] + bonus_lines + d[3:]
     for idx, row in enumerate(d):
-        for idy, char in enumerate(row):
-            nodes[Node(idx, idy)] = char
-            if char in "ABCD.":
-                spaces.append(Node(idx, idy))
-            if char in "ABCD":
-                pod_locs.append((Node(idx, idy), char))
+        for idy, letter in enumerate(row):
+            nodes[(idx, idy)] = letter
+            if letter in "ABCD.":
+                spaces.append((idx, idy))
+            if letter in "ABCD":
+                pod_locs.append(((idx, idy), letter))
 
     neighbors = defaultdict(list)
     for node in spaces:
         for move in MOVES:
-            if node + move in spaces:
-                neighbors[node].append(node + move)
+            neighb = (node[0] + move[0], node[1] + move[1])
+            if neighb in spaces:
+                neighbors[node].append(neighb)
 
     paths = {}
     for node in spaces:
@@ -347,6 +340,8 @@ def main():
     print("**** REAL DATA ****")
     d = load_data("day23.txt")
     answer_1, answer_2 = solve(d)
+    assert answer_1 == 16059
+    assert answer_2 == 43117
     print("Answer 1:", answer_1)
     print("Answer 2:", answer_2)
 
