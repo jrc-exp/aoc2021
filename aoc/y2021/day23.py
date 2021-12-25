@@ -33,31 +33,20 @@ MOVE_COST = {
 }
 
 
-class Node:
+from typing import NamedTuple
+
+
+class Node(NamedTuple):
     """NODE HELPER"""
 
-    def __init__(self, y, x):
-        self.y = y
-        self.x = x
-
-    def __lt__(self, z):
-        if self.x < z.x:
-            return True
-        elif self.y < z.y:
-            return True
-        return False
+    y: int
+    x: int
 
     def __add__(self, z):
         return Node(self.y + z[0], self.x + z[1])
 
-    def __hash__(self) -> int:
-        return (self.y, self.x).__hash__()
-
     def __repr__(self):
         return f"({self.y}, {self.x})"
-
-    def __eq__(self, n):
-        return self.y == n.y and self.x == n.x
 
 
 GOAL_NODES = {
@@ -97,10 +86,11 @@ def is_open(node, nodes):
     return nodes[node] == OPEN
 
 
-def path_clear(node1, node2, state, paths, occupied):
+def path_clear(node1, node2, paths, occupied):
     path = paths[(node1, node2)]
-    if all(node not in occupied for node in path[1:]):
-        return len(path) - 1
+    # if all(node not in occupied for node in path[1:]):
+    if not occupied.intersection(path):
+        return len(path)
     return 0
 
 
@@ -125,7 +115,7 @@ def full_moves(state, paths, goal_nodes=GOAL_NODES):
         for node_out in reversed(goal_nodes[char]):
             if node_out == node:
                 continue
-            cost = path_clear(node, node_out, state, paths, occupied)
+            cost = path_clear(node, node_out, paths, occupied)
             if not cost:
                 # if we can't get here, this needs to be a correct type
                 if (node_out, char) not in state:
@@ -141,7 +131,7 @@ def full_moves(state, paths, goal_nodes=GOAL_NODES):
         # if we're not finished, but in a lower place we can maybe move to the hall
         if node.y > 1:
             for node_out in NON_DOOR_NODES:
-                cost = path_clear(node, node_out, state, paths, occupied)
+                cost = path_clear(node, node_out, paths, occupied)
                 if cost:
                     moves.append((cost * MOVE_COST[char], node, node_out))
     return moves
@@ -186,8 +176,15 @@ print(GOAL_STATE_BIG)
 GOAL_STATE_BIG = frozenset(GOAL_STATE_BIG)
 
 
-def state_to_occupied(state):
-    return set(n for n, c in state)
+# @cache
+def heur(out_state):
+    # one heuristic that is "fast" is that everything has to move
+    # at least their x-distance from the goal column to be finished
+    # but this doesn't seem to be enough to speed the search
+    h = 0
+    for node, char in out_state:
+        h += MOVE_COST[char] * abs(node.x - GOAL_X[char])
+    return h
 
 
 def solve_puzzle(goal, pod_locs, paths, spaces):
@@ -222,13 +219,12 @@ def solve_puzzle(goal, pod_locs, paths, spaces):
             out_state = frozenset(out_state)
             out_nodes = [n for (n, _) in out_state]
             count = Counter(out_nodes)
-            # print((node_in, node_out), out_state)
             assert all(count[k] == 1 for k in count)
             tentative_g_score = g_score[state] + node_cost
             if tentative_g_score < g_score[out_state]:
                 came_from[out_state] = state
                 g_score[out_state] = tentative_g_score
-                fn = g_score[out_state]
+                fn = g_score[out_state] + heur(out_state)
                 if not open_set_hash[out_state]:
                     heapq.heappush(open_set, (fn, out_state))
                     open_set_hash[out_state] = True
@@ -272,14 +268,14 @@ def solve(d):
     for node in spaces:
         for node_out in spaces:
             if node != node_out:
-                paths[(node, node_out)] = find_goal(node, node_out, [], neighbors)
+                paths[(node, node_out)] = set(find_goal(node, node_out, [], neighbors)[1:])
 
     occupied = set(node for node, _ in pod_locs)
-    assert path_clear(Node(3, 7), Node(1, 10), pod_locs, paths, occupied) == 0
-    assert path_clear(Node(2, 7), Node(1, 7), pod_locs, paths, occupied) == 1
-    assert path_clear(Node(2, 7), Node(1, 8), pod_locs, paths, occupied) == 2
-    assert path_clear(Node(3, 3), Node(1, 7), pod_locs, paths, occupied) == 0
-    assert path_clear(Node(2, 9), Node(1, 1), pod_locs, paths, occupied) == 9
+    assert path_clear(Node(3, 7), Node(1, 10), paths, occupied) == 0
+    assert path_clear(Node(2, 7), Node(1, 7), paths, occupied) == 1
+    assert path_clear(Node(2, 7), Node(1, 8), paths, occupied) == 2
+    assert path_clear(Node(3, 3), Node(1, 7), paths, occupied) == 0
+    assert path_clear(Node(2, 9), Node(1, 1), paths, occupied) == 9
 
     # print(full_moves(pod_locs, paths))
     result_1, _ = solve_puzzle(GOAL_STATE, pod_locs, paths, spaces)
@@ -306,7 +302,7 @@ def solve(d):
     for node in spaces:
         for node_out in spaces:
             if node != node_out:
-                paths[(node, node_out)] = find_goal(node, node_out, [], neighbors)
+                paths[(node, node_out)] = set(find_goal(node, node_out, [], neighbors)[1:])
 
     result_2, path = solve_puzzle(GOAL_STATE_BIG, pod_locs, paths, spaces)
     for idx, step in enumerate(path):
