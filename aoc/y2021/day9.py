@@ -5,6 +5,13 @@ import numpy as np
 from aoc.y2021.utils import load_data
 from scipy.ndimage import generic_filter
 from skimage.measure import regionprops, label
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def low_point(d):

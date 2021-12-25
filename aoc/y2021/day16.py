@@ -8,6 +8,13 @@ from collections import defaultdict, Counter
 from time import time
 import numpy as np
 from aoc.y2021.utils import load_data
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def hex2bin(hex_str):

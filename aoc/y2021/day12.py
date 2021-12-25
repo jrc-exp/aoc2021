@@ -4,6 +4,17 @@ import sys
 from collections import defaultdict
 import numpy as np
 from aoc.y2021.utils import load_data
+import os
+from pprint import pprint
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
+
+    def pprint(*args, **kwargs):
+        pass
 
 
 def isBig(node: str):
@@ -56,7 +67,6 @@ def solve(d):
         a, b = node.split("-")
         nodes[a].append(b)
         nodes[b].append(a)
-    from pprint import pprint
 
     d = {}
     d.update(nodes)
@@ -71,8 +81,13 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = False
-    if not skip_test:
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
+    # load data:
+    if not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day12.txt")
         test_answer_1 = 10

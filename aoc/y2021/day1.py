@@ -3,10 +3,17 @@
 import numpy as np
 
 from aoc.y2021.utils import load_data
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def main():
-    """ Main function """
+    """Main function"""
     # load data:
     d = load_data("day1.txt", "int")
 

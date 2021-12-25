@@ -3,6 +3,13 @@
 import sys
 import numpy as np
 from aoc.y2021.utils import load_data
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 VALID = 0
@@ -95,8 +102,13 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = False
-    if not skip_test:
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
+    # load data:
+    if not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day10.txt")
         test_answer_1 = 26397

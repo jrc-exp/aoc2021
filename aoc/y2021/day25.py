@@ -6,6 +6,13 @@ from collections import defaultdict, Counter
 from itertools import permutations, product
 import numpy as np
 from aoc.y2021.utils import load_data
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def ints(x):
@@ -67,6 +74,8 @@ def solve(d):
 
 def main():
     """Main function"""
+    from argparse import ArgumentParser
+
     args = ArgumentParser()
     args.add_argument("--skip", action="store_true")
     args = args.parse_args()

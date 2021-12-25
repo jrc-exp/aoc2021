@@ -8,6 +8,14 @@ from itertools import permutations, product
 import numpy as np
 from aoc.y2021.utils import load_data
 
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
+
 
 def ints(x):
     return list(map(int, x))

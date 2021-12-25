@@ -2,10 +2,17 @@
 
 from aoc.y2021.utils import load_data
 import numpy as np
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def main():
-    """ Main function """
+    """Main function"""
     # load data:
     d = load_data("day5.txt")
     print("INPUT DATA:")
@@ -14,24 +21,24 @@ def main():
     lines = []
     for line in d:
         a, b, c = line.split()
-        x1, y1 = a.split(',')
-        x2, y2 = c.split(',')
+        x1, y1 = a.split(",")
+        x2, y2 = c.split(",")
         x1 = int(x1)
         x2 = int(x2)
         y1 = int(y1)
         y2 = int(y2)
         lines.append(((x1, y1), (x2, y2)))
 
-    straight_lines = list(filter(lambda x: x[0][0]==x[1][0] or x[0][1]==x[1][1], lines))
-    diagonal_lines = list(filter(lambda x: not x[0][0]==x[1][0] and not x[0][1]==x[1][1], lines))
+    straight_lines = list(filter(lambda x: x[0][0] == x[1][0] or x[0][1] == x[1][1], lines))
+    diagonal_lines = list(filter(lambda x: not x[0][0] == x[1][0] and not x[0][1] == x[1][1], lines))
 
-    max_n = np.max(np.array(straight_lines))+1
+    max_n = np.max(np.array(straight_lines)) + 1
     grid = np.zeros((max_n, max_n))
     for line in straight_lines:
         ((x1, y1), (x2, y2)) = line
-        grid[min(x1,x2):max(x1,x2)+1, min(y1,y2):max(y1,y2)+1] += 1
+        grid[min(x1, x2) : max(x1, x2) + 1, min(y1, y2) : max(y1, y2) + 1] += 1
 
-    print("Answer 1", np.sum(grid>=2))
+    print("Answer 1", np.sum(grid >= 2))
 
     for line in diagonal_lines:
         ((x1, y1), (x2, y2)) = line
@@ -46,8 +53,7 @@ def main():
             if x1 == x2 or y1 == y2:
                 break
 
-    print("Answer 2", np.sum(grid>=2))
-
+    print("Answer 2", np.sum(grid >= 2))
 
 
 if __name__ == "__main__":

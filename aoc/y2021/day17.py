@@ -4,6 +4,13 @@ import sys
 from collections import defaultdict, Counter
 import numpy as np
 from aoc.y2021.utils import load_data
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def ints(x):

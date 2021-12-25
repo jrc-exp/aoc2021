@@ -5,6 +5,13 @@ from collections import defaultdict, Counter
 import numpy as np
 from aoc.y2021.utils import load_data
 from itertools import permutations
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def ints(x):
@@ -77,7 +84,7 @@ def solve(d):
         if "," in row:
             beacons.append(np.array(ints(row.split(","))))
     scanners.append(np.array(beacons))
-    scanners = np.array(scanners)
+    scanners = np.array(scanners, dtype=object)
 
     # create a list of the relative distances between each pair of nodes seen by each beacon
     beacon_diffs = []
@@ -180,8 +187,13 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = False
-    if not skip_test:
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
+    # load data:
+    if not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day19.txt")
         test_answer_1 = 79

@@ -8,6 +8,13 @@ import sys
 from networkx import Graph, DiGraph, shortest_path_length
 import numpy as np
 from aoc.y2021.utils import load_data
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def heur(x, y, xs, ys):
@@ -126,8 +133,13 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = True
-    if not skip_test:
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
+    # load data:
+    if False and not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day15.txt")
         test_answer_1 = 40

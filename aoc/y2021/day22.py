@@ -6,6 +6,13 @@ from itertools import permutations, product
 from typing import List
 import numpy as np
 from aoc.y2021.utils import load_data
+import os
+
+if os.environ.get("AOC_QUIET", None):
+
+    # pylint: disable
+    def print(*args, **kwargs):
+        pass
 
 
 def ints(x):
@@ -182,9 +189,13 @@ def solve(d):
 
 def main():
     """Main function"""
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
     # load data:
-    skip_test = False
-    if not skip_test:
+    if not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day22.txt")
         test_answer_1 = 590784
