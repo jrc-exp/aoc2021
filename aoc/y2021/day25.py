@@ -5,7 +5,6 @@ import sys
 from collections import defaultdict, Counter
 from itertools import permutations, product
 import numpy as np
-from tqdm import tqdm
 from aoc.y2021.utils import load_data
 
 
@@ -27,35 +26,37 @@ rev_key = {
     1: ">",
     2: "v",
     0: ".",
-    3: "*",
-    4: "o",
 }
 
 
 def solve(d):
     """actual solution with puzzle input"""
     result_1, result_2 = 0, 0
-    print("INPUT DATA:")
-    print(d)
+    # print("INPUT DATA:")
+    # print(d)
     n_rows = len(d)
     n_cols = len(d[0])
     x = np.zeros((n_rows, n_cols))
     for idx, row in enumerate(d):
         x[idx] = [key[c] for c in row]
 
-    for step in tqdm(range(10000)):
-        start_x = x.copy()
+    for step in range(10000):
         shift_left = np.roll(x, -1, axis=1)
         shift_right = np.roll(x, 1, axis=1)
-        x[(start_x == 1) & (shift_left == 0)] = 0
-        x[(shift_right == 1) & (start_x == 0)] = 1
 
-        copy_x = x.copy()
+        # don't make the update, but find the locations
+        id_1 = (shift_right == 1) & (x == 0)
+        x[(x == 1) & (shift_left == 0)] = 0
+        x[id_1] = 1
+
         shift_up = np.roll(x, -1, axis=0)
         shift_down = np.roll(x, 1, axis=0)
-        x[np.bitwise_and(copy_x == 2, shift_up == 0)] = 0
-        x[np.bitwise_and(shift_down == 2, copy_x == 0)] = 2
-        if np.all(x == start_x):
+
+        # don't make the update, but find the locations
+        id_0 = np.bitwise_and(x == 2, shift_up == 0)
+        x[(shift_down == 2) & (x == 0)] = 2
+        x[id_0] = 0
+        if not np.any(id_1 | id_0):
             print("done at step", step)
             break
 
