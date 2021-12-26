@@ -124,7 +124,7 @@ def clean_program(d):
         for idy, c in enumerate(d[idx]):
             try:
                 d[idx][idy] = int(c)
-            except:
+            except ValueError:
                 pass
             if len(d[idx]) == 2:
                 d[idx].append("")
@@ -168,17 +168,18 @@ def solve(d, skip_tests=False):
             assert alu.w == int(bin_num[0]), "w"
             assert alu.x == int(bin_num[1]), "x"
             assert alu.y == int(bin_num[2]), "y"
-    # pylint: disable=pointless-string-statement
 
     # I'm not entirely sure why this worked, but it did:
+    # if you search the digits in order from left to right and 1 to 10 per digit,
+    # you need to start from 11111111111111, butif you search each iterator "reversed"
+    # you have to start from 99999999999999! I don't know why!
+    # But ironically this seems to always find... the minimum number!
     best_z = np.inf
-    # it doesn't actually matter what number you start with:
-    # this seems to find the minimum number directly
-    best_num = int("".join(["9"] * 14))
+    best_num = int("".join(["1"] * 14))
     for stop_input in range(1, 15):
         best_z = run_program(d, best_num).z
-        for digit in reversed(range(14)):
-            for n in reversed(range(1, 10)):
+        for digit in range(14):
+            for n in range(1, 10):
                 num = list(str(best_num))
                 num[digit] = str(n)
                 num = int("".join(num))
@@ -186,49 +187,56 @@ def solve(d, skip_tests=False):
                 if alu.z < best_z:
                     best_num = num
                     best_z = alu.z
-                    if best_z == 0 and stop_input == 14:
-                        print("Found a zero!")
-                        print(best_num, best_z, alu)
 
-    # But once we have a "zero" number we can find the bigger and
-    # smaller ones easily because the output is only ever affected by
-    # pairs of digits at most - so wiggle two digits and stay at zero
-    changed = True
-    while changed:
-        changed = False
-        for d1 in range(14):
-            for d2 in range(14):
-                num = list(str(best_num))
-                if num[d1] == "9" or num[d2] == "9":
-                    continue
-                num[d1] = str(int(num[d1]) + 1)
-                num[d2] = str(int(num[d2]) + 1)
-                num = int("".join(num))
-                alu = run_program(d, num, stop_input=stop_input)
-                if alu.z == 0:
-                    changed = True
-                    best_num = num
-                    break
-    result_1 = best_num
-
-    # now we search for the min, but it was apparently what we found
-    # earlier!
-    changed = True
-    while changed:
-        changed = False
-        for d1 in range(14):
-            for d2 in range(14):
-                num = list(str(best_num))
-                if num[d1] == "1" or num[d2] == "1":
-                    continue
+    # But once we have a "zero" number we can deduce the rules!
+    linked_digits = set()
+    for d1 in range(14):
+        for d2 in range(14):
+            num = list(str(best_num))
+            if num[d1] == "9" or num[d2] == "9":
                 num[d1] = str(int(num[d1]) - 1)
                 num[d2] = str(int(num[d2]) - 1)
-                num = int("".join(num))
-                alu = run_program(d, num, stop_input=stop_input)
-                if alu.z == 0:
-                    best_num = num
-                    changed = True
-    result_2 = best_num
+            else:
+                num[d1] = str(int(num[d1]) + 1)
+                num[d2] = str(int(num[d2]) + 1)
+            num = int("".join(num))
+            alu = run_program(d, num, stop_input=stop_input)
+            if alu.z == 0:
+                linked_digits.add((min(d1, d2), max(d1, d2)))
+                break
+
+    # Use the rules:
+    min_number = [0] * 14
+    max_number = [0] * 14
+    for pair in sorted(list(linked_digits)):
+        a, b = pair
+        num = str(best_num)
+        rule = int(num[b]) - int(num[a])
+        print(f"Rule: D[{a+1}] {' ' if a < 10 else ''}{'+' if rule>0 else '-'} {abs(rule)} = D[{b+1}]")
+        if rule > 0:
+            min_number[a] = 1
+            min_number[b] = 1 + rule
+            max_number[a] = 9 - rule
+            max_number[b] = 9
+        else:
+            min_number[b] = 1
+            min_number[a] = 1 - rule
+            max_number[b] = 9 + rule
+            max_number[a] = 9
+
+    # Make sure something wasn't d[x] + 8 = d[y]:
+    # if it was it can't big wiggled and it's a 1 paired with a 9
+    if len(linked_digits) < 7:
+        zero_num = str(best_num)
+        for digit in range(14):
+            for pair in linked_digits:
+                break
+            else:
+                min_number[digit] = zero_num[digit]
+                max_number[digit] = zero_num[digit]
+
+    result_1 = sum(x * 10 ** p for p, x in enumerate(reversed(max_number)))
+    result_2 = sum(x * 10 ** p for p, x in enumerate(reversed(min_number)))
 
     return result_1, result_2
 
@@ -240,6 +248,8 @@ def main():
     args = args.parse_args()
     d = load_data("day24.txt")
     answer_1, answer_2 = solve(d)
+    assert answer_1 == 59998426997979
+    assert answer_2 == 13621111481315
     print("Answer 1:", answer_1)
     print("Answer 2:", answer_2)
 
