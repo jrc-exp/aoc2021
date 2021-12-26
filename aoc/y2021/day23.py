@@ -61,17 +61,18 @@ R = (0, 1)
 MOVES = (U, D, L, R)
 
 
-def in_goal(node, letter):
+def in_goal(node, letter, goal_nodes):
     assert letter in "ABCD"
-    return node in GOAL_NODES[letter]
+    return node in goal_nodes[letter]
 
 
 def path_clear(node1, node2, paths, occupied):
     path = paths[(node1, node2)]
     # if all(node not in occupied for node in path[1:]):
-    if not occupied.intersection(path):
-        return len(path)
-    return 0
+    for node in path:
+        if node in occupied:
+            return 0
+    return len(path)
 
 
 NON_DOOR_NODES = [(1, x) for x in range(1, 12) if x not in [3, 5, 7, 9]]
@@ -83,8 +84,7 @@ def full_moves(state, paths, goal_nodes=GOAL_NODES):
     occupied = set(node for node, _ in state)
     for node, letter in state:
         # finished moving:
-        if in_goal(node, letter):
-            # TODO(JRC): FIX THIS FOR ANY SIZE
+        if in_goal(node, letter, goal_nodes):
             for y in range(node[0], 4 if len(state) == 8 else 6):
                 if ((y, node[1]), letter) not in state:
                     break
@@ -149,30 +149,29 @@ GOAL_STATE = frozenset(
 )
 
 GOAL_STATE_BIG = []
-for letter, x in GOAL_X.items():
+for l, x in GOAL_X.items():
     for y in range(2, 6):
-        GOAL_STATE_BIG.append(((y, x), letter))
-print(GOAL_STATE_BIG)
+        GOAL_STATE_BIG.append(((y, x), l))
 GOAL_STATE_BIG = frozenset(GOAL_STATE_BIG)
 
 
-@cache
-def heur_node(node, letter):
-    h = MOVE_COST[letter] * abs(node[1] - GOAL_X[letter])
-    if node[0] > 1 and node[1] != GOAL_X[letter]:
-        h += MOVE_COST[letter]
+def heur_node(node, letter, goal_nodes, paths):
+    h = 0
+    if not in_goal(node, letter, goal_nodes):
+        h = MOVE_COST[letter] * len(paths[(node, goal_nodes[letter][0])])
     return h
 
 
-def heur(out_state):
+def heur(out_state, paths):
     """
     one heuristic that is "fast" is that everything has to move
     at least their x-distance from the goal column to be finished
     but this doesn't seem to be enough to speed the search
     """
     h = 0
+    goal_nodes = GOAL_NODES if len(out_state) == 8 else GOAL_NODES_BIG
     for node, letter in out_state:
-        h += heur_node(node, letter)
+        h += heur_node(node, letter, goal_nodes, paths)
     return h
 
 
@@ -207,15 +206,12 @@ def solve_puzzle(goal, pod_locs, paths, spaces):
             out_state.remove((node_in, letter))
             out_state.append((node_out, letter))
             out_state = frozenset(out_state)
-            out_nodes = [n for (n, _) in out_state]
-            count = Counter(out_nodes)
-            assert all(count[k] == 1 for k in count)
             tentative_g_score = g_score[state] + node_cost
             if tentative_g_score < g_score[out_state]:
                 came_from[out_state] = state
                 g_score[out_state] = tentative_g_score
                 # slower with the heuristic... *sigh*
-                fn = g_score[out_state]  # + heur(out_state)
+                fn = g_score[out_state]  # + heur(out_state, paths)
                 if not open_set_hash[out_state]:
                     heapq.heappush(open_set, (fn, out_state))
                     open_set_hash[out_state] = True

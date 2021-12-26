@@ -18,11 +18,11 @@ if __name__ == "__main__":
     def get_star_time(day, part, name):
         try:
             return get_day_for_name(day, name)[str(part)]["get_star_ts"]
-        except:
+        except (KeyError, TypeError):
             return None
 
     name_list = list(names)
-    # name_list = ["jrc-exp", "Kevin McCrea", "sheromon"]
+    name_list = ["jrc-exp", "Kevin McCrea", "sheromon"]
     points = {name: 0 for name in name_list}
     for day in range(1, 26):
         for part in range(1, 3):
@@ -32,11 +32,13 @@ if __name__ == "__main__":
             order = list(reversed(sorted(range(len(times)), key=lambda k: times[k] if times[k] else 1e20)))
             for score, idx in enumerate(order, start=1):
                 if times[idx]:
+                    # Standard Score:
+                    # points[name_list[idx]] += score
+                    # Scaled by ~ Day 25 = 1.5x and Part 2 = 1.7x
+                    points[name_list[idx]] += score * day ** 0.25 * part ** 0.5
                     # points[name_list[idx]] += score * np.sqrt(day)
                     # points[name_list[idx]] += score * np.sqrt(day) * part
                     # points[name_list[idx]] += score * day ** 0.25
-                    points[name_list[idx]] += score * day ** 0.25 * part ** 0.5
-                    # points[name_list[idx]] += score
                     # points[name_list[idx]] += score * part
 
     for name in points:
