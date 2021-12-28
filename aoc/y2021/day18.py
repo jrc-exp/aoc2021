@@ -1,13 +1,12 @@
 """ Day 18 Solutions """
 
-from copy import deepcopy
-import sys
-from collections import defaultdict, Counter
-from ast import literal_eval
-import numpy as np
-from aoc.y2021.utils import load_data
-
 import os
+from ast import literal_eval
+from copy import deepcopy
+
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 

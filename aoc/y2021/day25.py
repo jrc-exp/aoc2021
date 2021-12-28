@@ -1,12 +1,14 @@
 """ Day 25 Solutions """
 
-from argparse import ArgumentParser
-import sys
-from collections import defaultdict, Counter
-from itertools import permutations, product
-import numpy as np
-from aoc.y2021.utils import load_data
 import os
+import sys
+from argparse import ArgumentParser
+from collections import Counter, defaultdict
+from itertools import permutations, product
+
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 

@@ -1,7 +1,8 @@
 """ Day 2 Solutions """
 
-from aoc.y2021.utils import load_data
 import os
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 

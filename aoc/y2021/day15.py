@@ -1,14 +1,14 @@
 """ Day 15 Solutions """
 
-from time import time
 import heapq
-from bisect import insort_left
-from collections import defaultdict, Counter, deque
-import sys
-from networkx import Graph, DiGraph, shortest_path_length
-import numpy as np
-from aoc.y2021.utils import load_data
 import os
+from collections import defaultdict
+from time import time
+
+# from networkx import Graph, DiGraph, shortest_path_length
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 

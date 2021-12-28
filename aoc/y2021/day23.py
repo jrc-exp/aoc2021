@@ -1,16 +1,13 @@
 """ Day 23 Solutions """
-from argparse import ArgumentParser
 import heapq
-from functools import cache
-import sys
-from copy import deepcopy
-from collections import defaultdict, Counter
-from itertools import permutations, product
-from unittest import result
-import numpy as np
-from aoc.y2021.utils import load_data
-
 import os
+from argparse import ArgumentParser
+from collections import defaultdict
+from functools import cache
+
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 
@@ -23,6 +20,8 @@ def ints(x):
     return list(map(int, x))
 
 
+PATHS = {}
+
 OPEN = "."
 WALL = "#"
 MOVE_COST = {
@@ -33,7 +32,7 @@ MOVE_COST = {
 }
 
 
-GOAL_NODES = {
+GOAL_NODES_SMALL = {
     "A": ((2, 3), (3, 3)),
     "B": ((2, 5), (3, 5)),
     "C": ((2, 7), (3, 7)),
@@ -46,6 +45,8 @@ GOAL_NODES_BIG = {
     "C": ((2, 7), (3, 7), (4, 7), (5, 7)),
     "D": ((2, 9), (3, 9), (4, 9), (5, 9)),
 }
+
+GOAL_NODES = GOAL_NODES_SMALL
 
 GOAL_X = {
     "A": 3,
@@ -61,14 +62,16 @@ R = (0, 1)
 MOVES = (U, D, L, R)
 
 
-def in_goal(node, letter, goal_nodes):
-    assert letter in "ABCD"
-    return node in goal_nodes[letter]
+def in_goal(node, letter):
+    return node in GOAL_NODES[letter]
 
 
-def path_clear(node1, node2, paths, occupied):
-    path = paths[(node1, node2)]
-    # if all(node not in occupied for node in path[1:]):
+def coord(node):
+    return node[0]
+
+
+def path_clear(node1, node2, occupied):
+    path = PATHS[(node1, node2)]
     for node in path:
         if node in occupied:
             return 0
@@ -78,24 +81,24 @@ def path_clear(node1, node2, paths, occupied):
 NON_DOOR_NODES = [(1, x) for x in range(1, 12) if x not in [3, 5, 7, 9]]
 
 # pylint: disable=dangerous-default-value
-def full_moves(state, paths, goal_nodes=GOAL_NODES):
+def legal_moves(state):
     """full sized moves"""
     moves = []
     occupied = set(node for node, _ in state)
     for node, letter in state:
         # finished moving:
-        if in_goal(node, letter, goal_nodes):
+        if in_goal(node, letter):
             for y in range(node[0], 4 if len(state) == 8 else 6):
                 if ((y, node[1]), letter) not in state:
                     break
             else:
                 continue
 
-        goal_available = False
-        for node_out in reversed(goal_nodes[letter]):
+        # check if anyone can get to the goal and just do that:
+        for node_out in reversed(GOAL_NODES[letter]):
             if node_out == node:
                 continue
-            cost = path_clear(node, node_out, paths, occupied)
+            cost = path_clear(node, node_out, occupied)
             if not cost:
                 # if we can't get here, this needs to be a correct type
                 if (node_out, letter) not in state:
@@ -103,15 +106,13 @@ def full_moves(state, paths, goal_nodes=GOAL_NODES):
                 # if it's the right one at the bottom, we can check above
                 continue
             moves.append((cost * MOVE_COST[letter], node, node_out))
-            goal_available = True
-            break
-        if goal_available:
-            continue
+            return moves
 
+    for node, letter in state:
         # if we're not finished, but in a lower place we can maybe move to the hall
         if node[0] > 1:
             for node_out in NON_DOOR_NODES:
-                cost = path_clear(node, node_out, paths, occupied)
+                cost = path_clear(node, node_out, occupied)
                 if cost:
                     moves.append((cost * MOVE_COST[letter], node, node_out))
     return moves
@@ -135,7 +136,7 @@ def print_board(state, spaces):
         print(x)
 
 
-GOAL_STATE = frozenset(
+GOAL_STATE_SMALL = frozenset(
     (
         ((2, 3), "A"),
         ((3, 3), "A"),
@@ -154,35 +155,35 @@ for l, x in GOAL_X.items():
         GOAL_STATE_BIG.append(((y, x), l))
 GOAL_STATE_BIG = frozenset(GOAL_STATE_BIG)
 
+GOAL_STATE = GOAL_STATE_SMALL
 
-def heur_node(node, letter, goal_nodes, paths):
+
+@cache
+def heur_node(node, letter):
     h = 0
-    if not in_goal(node, letter, goal_nodes):
-        h = MOVE_COST[letter] * len(paths[(node, goal_nodes[letter][0])])
+    if not in_goal(node, letter):
+        h = MOVE_COST[letter] * len(PATHS[(node, GOAL_NODES[letter][0])])
     return h
 
 
-def heur(out_state, paths):
+@cache
+def heur(out_state):
     """
     one heuristic that is "fast" is that everything has to move
     at least their x-distance from the goal column to be finished
     but this doesn't seem to be enough to speed the search
     """
     h = 0
-    goal_nodes = GOAL_NODES if len(out_state) == 8 else GOAL_NODES_BIG
     for node, letter in out_state:
-        h += heur_node(node, letter, goal_nodes, paths)
+        h += heur_node(node, letter)
     return h
 
 
-def solve_puzzle(goal, pod_locs, paths, spaces):
+def solve_puzzle(goal, pod_locs, spaces):
     """solve maze"""
     # keep a look-up map/hash table for quick access to "if in open set"
     print_board(pod_locs, spaces)
-    if len(pod_locs) == 8:
-        goal_nodes = GOAL_NODES
-    else:
-        goal_nodes = GOAL_NODES_BIG
+
     open_set_hash = defaultdict(lambda: False)
     print("start_state", pod_locs)
     start_state = frozenset(pod_locs)
@@ -193,29 +194,40 @@ def solve_puzzle(goal, pod_locs, paths, spaces):
     came_from = dict()
     g_score = defaultdict(lambda: np.inf)
     g_score[start_state] = 0
+    best_goal_score = np.inf
+    loop_ct = 0
+    saved_loops = 0
     while open_set:
+        loop_ct += 1
         _, state = heapq.heappop(open_set)
         open_set_hash[state] = False
-        moves = full_moves(state, paths, goal_nodes)
+        moves = legal_moves(state)
         for node_cost, node_in, node_out in moves:
             letter = ""
             for n, c in state:
                 if node_in == n:
                     letter = c
             out_state = list(state)
-            out_state.remove((node_in, letter))
-            out_state.append((node_out, letter))
-            out_state = frozenset(out_state)
+            out_state[out_state.index((node_in, letter))] = (node_out, letter)
             tentative_g_score = g_score[state] + node_cost
+            out_state = frozenset(out_state)
+            h_score = heur(out_state)
+            if tentative_g_score + h_score >= best_goal_score:
+                # don't continue down bad paths!
+                saved_loops += 1
+                continue
             if tentative_g_score < g_score[out_state]:
                 came_from[out_state] = state
                 g_score[out_state] = tentative_g_score
+                if out_state == GOAL_STATE:
+                    best_goal_score = tentative_g_score
                 # slower with the heuristic... *sigh*
-                fn = g_score[out_state]  # + heur(out_state, paths)
+                fn = g_score[out_state] + h_score
                 if not open_set_hash[out_state]:
                     heapq.heappush(open_set, (fn, out_state))
                     open_set_hash[out_state] = True
 
+    print("loops", loop_ct, "saved loops", saved_loops)
     path = [goal]
     state = came_from[goal]
     while True:
@@ -230,6 +242,7 @@ def solve_puzzle(goal, pod_locs, paths, spaces):
 
 def solve(d):
     """actual solution with puzzle input"""
+    global GOAL_NODES, GOAL_STATE
     result_1, result_2 = 0, 0
     print("INPUT DATA:")
     print(d)
@@ -245,6 +258,13 @@ def solve(d):
             if letter in "ABCD":
                 pod_locs.append(((idx, idy), letter))
 
+    if len(pod_locs) == 8:
+        GOAL_NODES = GOAL_NODES_SMALL
+        GOAL_STATE = GOAL_STATE_SMALL
+    else:
+        GOAL_NODES = GOAL_NODES_BIG
+        GOAL_STATE = GOAL_STATE_BIG
+
     neighbors = defaultdict(list)
     for node in spaces:
         for move in MOVES:
@@ -252,21 +272,14 @@ def solve(d):
             if neighb in spaces:
                 neighbors[node].append(neighb)
 
-    paths = {}
+    global PATHS
+    PATHS = {}
     for node in spaces:
         for node_out in spaces:
             if node != node_out:
-                paths[(node, node_out)] = set(find_goal(node, node_out, [], neighbors)[1:])
+                PATHS[(node, node_out)] = set(find_goal(node, node_out, [], neighbors)[1:])
 
-    occupied = set(node for node, _ in pod_locs)
-    assert path_clear((3, 7), (1, 10), paths, occupied) == 0
-    assert path_clear((2, 7), (1, 7), paths, occupied) == 1
-    assert path_clear((2, 7), (1, 8), paths, occupied) == 2
-    assert path_clear((3, 3), (1, 7), paths, occupied) == 0
-    assert path_clear((2, 9), (1, 1), paths, occupied) == 9
-
-    # print(full_moves(pod_locs, paths))
-    result_1, _ = solve_puzzle(GOAL_STATE, pod_locs, paths, spaces)
+    result_1, _ = solve_puzzle(GOAL_STATE, pod_locs, spaces)
     nodes = {}
     pod_locs = []
     spaces = []
@@ -280,6 +293,13 @@ def solve(d):
             if letter in "ABCD":
                 pod_locs.append(((idx, idy), letter))
 
+    if len(pod_locs) == 8:
+        GOAL_NODES = GOAL_NODES_SMALL
+        GOAL_STATE = GOAL_STATE_SMALL
+    else:
+        GOAL_NODES = GOAL_NODES_BIG
+        GOAL_STATE = GOAL_STATE_BIG
+
     neighbors = defaultdict(list)
     for node in spaces:
         for move in MOVES:
@@ -287,16 +307,16 @@ def solve(d):
             if neighb in spaces:
                 neighbors[node].append(neighb)
 
-    paths = {}
+    PATHS = {}
     for node in spaces:
         for node_out in spaces:
             if node != node_out:
-                paths[(node, node_out)] = set(find_goal(node, node_out, [], neighbors)[1:])
+                PATHS[(node, node_out)] = set(find_goal(node, node_out, [], neighbors)[1:])
 
-    result_2, path = solve_puzzle(GOAL_STATE_BIG, pod_locs, paths, spaces)
-    for idx, step in enumerate(path):
-        print("Step", idx)
-        print_board(step, spaces)
+    result_2, path = solve_puzzle(GOAL_STATE, pod_locs, spaces)
+    # for idx, step in enumerate(path):
+    #     print("Step", idx)
+    #     print_board(step, spaces)
 
     return result_1, result_2
 

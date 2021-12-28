@@ -1,5 +1,6 @@
-import requests
 import sys
+
+import requests
 from bs4 import BeautifulSoup
 
 if __name__ == "__main__":
@@ -22,6 +23,5 @@ if __name__ == "__main__":
         print("Maybe First Test Answer:", answer_text)
     except IndexError:
         print("Couldn't find test answer.")
-        pass
     with open(f"inputs/test_day{day}_answer.txt", "w") as f:
         f.write(answer_text)

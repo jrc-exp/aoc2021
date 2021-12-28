@@ -1,11 +1,13 @@
 """ Day 9 Solutions """
 
-import sys
-import numpy as np
-from aoc.y2021.utils import load_data
-from scipy.ndimage import generic_filter
-from skimage.measure import regionprops, label
 import os
+import sys
+
+import numpy as np
+from scipy.ndimage import generic_filter
+from skimage.measure import label, regionprops
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 

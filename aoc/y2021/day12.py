@@ -1,11 +1,10 @@
 """ Day 12 Solutions """
 
-import sys
-from collections import defaultdict
-import numpy as np
-from aoc.y2021.utils import load_data
 import os
+from collections import defaultdict
 from pprint import pprint
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 

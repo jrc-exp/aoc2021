@@ -1,9 +1,10 @@
 """ Day 1 Solutions """
 
+import os
+
 import numpy as np
 
 from aoc.y2021.utils import load_data
-import os
 
 if os.environ.get("AOC_QUIET", None):
 

@@ -1,10 +1,12 @@
 """ Day 0 Solutions """
 
-from argparse import ArgumentParser
 import sys
-from collections import defaultdict, Counter
+from argparse import ArgumentParser
+from collections import Counter, defaultdict
 from itertools import permutations, product
+
 import numpy as np
+
 from aoc.y2021.utils import load_data
 
 

@@ -1,10 +1,10 @@
 """ Day 17 Solutions """
 
-import sys
-from collections import defaultdict, Counter
-import numpy as np
-from aoc.y2021.utils import load_data
 import os
+
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 
@@ -118,8 +118,13 @@ def solve(d):
 def main():
     """Main function"""
     # load data:
-    skip_test = False
-    if not skip_test:
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument("--skip", action="store_true")
+    args = args.parse_args()
+    # load data:
+    if not args.skip:
         print("**** TEST DATA ****")
         d = load_data("test_day17.txt")
         test_answer_1 = 45

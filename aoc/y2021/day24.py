@@ -1,14 +1,12 @@
 """ Day 24 Solutions """
 
-from math import trunc
-import sys
-from argparse import ArgumentParser
-from collections import defaultdict, Counter
-from itertools import permutations, product
-import numpy as np
-from aoc.y2021.utils import load_data
-
 import os
+from argparse import ArgumentParser
+from math import trunc
+
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 
@@ -178,7 +176,7 @@ def solve(d, skip_tests=False):
     best_num = int("".join(["1"] * 14))
     for stop_input in range(1, 15):
         best_z = run_program(d, best_num).z
-        for digit in range(14):
+        for digit in range(stop_input):
             for n in range(1, 10):
                 num = list(str(best_num))
                 num[digit] = str(n)
@@ -187,11 +185,15 @@ def solve(d, skip_tests=False):
                 if alu.z < best_z:
                     best_num = num
                     best_z = alu.z
+                    if alu.z == 0:
+                        print("Found a zero at:", best_num)
 
     # But once we have a "zero" number we can deduce the rules!
     linked_digits = set()
     for d1 in range(14):
         for d2 in range(14):
+            if d1 == d2:
+                continue
             num = list(str(best_num))
             if num[d1] == "9" or num[d2] == "9":
                 num[d1] = str(int(num[d1]) - 1)
@@ -212,7 +214,7 @@ def solve(d, skip_tests=False):
         a, b = pair
         num = str(best_num)
         rule = int(num[b]) - int(num[a])
-        print(f"Rule: D[{a+1}] {' ' if a < 10 else ''}{'+' if rule>0 else '-'} {abs(rule)} = D[{b+1}]")
+        print(f"Rule: D[{a}] {' ' if a+1 < 10 else ''}{'+' if rule>0 else '-'} {abs(rule)} = D[{b}]")
         if rule > 0:
             min_number[a] = 1
             min_number[b] = 1 + rule
@@ -248,10 +250,10 @@ def main():
     args = args.parse_args()
     d = load_data("day24.txt")
     answer_1, answer_2 = solve(d)
-    assert answer_1 == 59998426997979
-    assert answer_2 == 13621111481315
     print("Answer 1:", answer_1)
     print("Answer 2:", answer_2)
+    assert answer_1 == 59998426997979
+    assert answer_2 == 13621111481315
 
 
 if __name__ == "__main__":

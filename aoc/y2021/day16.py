@@ -1,14 +1,13 @@
 """ Day 16 Solutions """
 
-from enum import IntEnum, Enum
-from types import SimpleNamespace
-import sys
-import heapq
-from collections import defaultdict, Counter
-from time import time
-import numpy as np
-from aoc.y2021.utils import load_data
 import os
+from enum import IntEnum
+from time import time
+from types import SimpleNamespace
+
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 

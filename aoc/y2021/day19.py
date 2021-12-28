@@ -1,11 +1,11 @@
 """ Day 19 Solutions """
-from math import perm
-import sys
-from collections import defaultdict, Counter
-import numpy as np
-from aoc.y2021.utils import load_data
-from itertools import permutations
 import os
+from collections import defaultdict
+from itertools import permutations
+
+import numpy as np
+
+from aoc.y2021.utils import load_data
 
 if os.environ.get("AOC_QUIET", None):
 
